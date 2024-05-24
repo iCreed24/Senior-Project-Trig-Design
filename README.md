@@ -1,2 +1,2 @@
-# Tig-Design-with-Chisel-HCL
-Tig Design with Chisel HCL
+# Trig-Design-with-Chisel-HCL
+Trig Design with Chisel HCL
