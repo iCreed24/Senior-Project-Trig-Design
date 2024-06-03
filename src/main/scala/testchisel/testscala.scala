@@ -66,6 +66,8 @@ import FP_Modules.FloatingPointDesigns._
       val in_x = Input(UInt(bw.W))
       val in_y = Input(UInt(bw.W))
       val in_z = Input(UInt(bw.W))
+      val in_cc = Input(UInt(log2Up(bw).W))
+
       val out_x = Output(UInt(bw.W))
       val out_y = Output(UInt(bw.W))
       val out_z = Output(UInt(bw.W))
@@ -77,33 +79,29 @@ import FP_Modules.FloatingPointDesigns._
 
     val rom = Module(new CORDIC_ROM(bw))
 
-    val x0 = io.in_x
-    val y0 = io.in_y
-    val z0 = io.in_z
-
     val yhalver0 = Module(new FloatHalver(bw))
     val xhalver0 = Module(new FloatHalver(bw))
-    yhalver0.io.in := y0
-    yhalver0.io.amt := 0.U // same idx as the one into the atan table
-    xhalver0.io.in := x0
-    xhalver0.io.amt := 0.U // same idx as the one into the atan table
+    yhalver0.io.in := io.in_y
+    yhalver0.io.amt := io.in_cc // same idx as the one into the atan table
+    xhalver0.io.in := io.in_x
+    xhalver0.io.amt := io.in_cc// same idx as the one into the atan table
 
     val x0adder = Module(new AdderSubber(bw))
     val y0adder = Module(new AdderSubber(bw))
     val z0adder = Module(new AdderSubber(bw))
 
-    x0adder.io.in_a := x0
+    x0adder.io.in_a := io.in_x
     x0adder.io.in_b := yhalver0.io.out // shifted y
-    x0adder.io.in_sel := sgn(z0)
+    x0adder.io.in_sel := sgn(io.in_z)
 
     y0adder.io.in_a := xhalver0.io.out
-    y0adder.io.in_b := y0
-    y0adder.io.in_sel := sgn(z0)
+    y0adder.io.in_b := io.in_y
+    y0adder.io.in_sel := sgn(io.in_z)
 
-    z0adder.io.in_a := 0.U //not index, starts at 0 the first iteration
-    rom.io.atanselect := 0.U // index
+    z0adder.io.in_a := io.in_z //not index
+    rom.io.atanselect := io.in_cc // index
     z0adder.io.in_b := rom.io.atanout
-    z0adder.io.in_sel := sgn(z0)
+    z0adder.io.in_sel := sgn(io.in_z)
 
     /* Assign module's final outputs */
     io.out_x := x0adder.io.out_s
