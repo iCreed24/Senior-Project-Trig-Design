@@ -29,7 +29,7 @@ import FP_Modules.FloatingPointDesigns._
     subber.io.in_a := io.in_a
     subber.io.in_b := io.in_b
 
-    if(0.U == io.in_sel)
+    if(1.U == io.in_sel)
       io.out_s := adder.io.out_s
     else
       io.out_s := subber.io.out_s
@@ -63,50 +63,69 @@ import FP_Modules.FloatingPointDesigns._
   {
     require(bw == 16 || bw == 32 || bw == 64 || bw == 128)
     val io = IO(new Bundle() {
-      val in_x = Input(UInt(bw.W))
-      val in_y = Input(UInt(bw.W))
-      val in_z = Input(UInt(bw.W))
+      val in_x0 = Input(UInt(bw.W))
+      val in_y0 = Input(UInt(bw.W))
+      val in_z0 = Input(UInt(bw.W))
       val in_cc = Input(UInt(log2Up(bw).W))
 
       val out_x = Output(UInt(bw.W))
       val out_y = Output(UInt(bw.W))
       val out_z = Output(UInt(bw.W))
+      val dbg_out_atan = Output((UInt(bw.W)))
     })
 
-    def sgn(float : UInt) : UInt = {
-      float(bw - 1)
-    }
-
     val rom = Module(new CORDIC_ROM(bw))
-
     val yhalver0 = Module(new FloatHalver(bw))
     val xhalver0 = Module(new FloatHalver(bw))
-    yhalver0.io.in := io.in_y
-    yhalver0.io.amt := io.in_cc // same idx as the one into the atan table
-    xhalver0.io.in := io.in_x
-    xhalver0.io.amt := io.in_cc// same idx as the one into the atan table
 
     val x0adder = Module(new AdderSubber(bw))
     val y0adder = Module(new AdderSubber(bw))
     val z0adder = Module(new AdderSubber(bw))
 
-    x0adder.io.in_a := io.in_x
+    def sgn(float : UInt) : UInt = {
+      float(bw - 1)
+    }
+    var xn = Wire(UInt(bw.W))
+    var yn = Wire(UInt(bw.W))
+    var zn = Wire(UInt(bw.W))
+
+    val xreg = Reg(UInt(bw.W))
+    val yreg = Reg(UInt(bw.W))
+    val zreg = Reg(UInt(bw.W))
+
+    xreg := Mux(io.in_cc === 0.U, io.in_x0, xn)
+    yreg := Mux(io.in_cc === 0.U, io.in_y0, yn)
+    zreg := Mux(io.in_cc === 0.U, io.in_z0, zn)
+
+    xn := x0adder.io.out_s
+    yn := y0adder.io.out_s
+    zn := z0adder.io.out_s
+
+    yhalver0.io.in := yreg
+    yhalver0.io.amt := io.in_cc // same idx as the one into the atan table
+    xhalver0.io.in := xreg
+    xhalver0.io.amt := io.in_cc// same idx as the one into the atan table
+
+    x0adder.io.in_a := xreg
     x0adder.io.in_b := yhalver0.io.out // shifted y
-    x0adder.io.in_sel := sgn(io.in_z)
+    x0adder.io.in_sel := ~sgn(zreg) // 1 is add, 0 is sub
 
     y0adder.io.in_a := xhalver0.io.out
-    y0adder.io.in_b := io.in_y
-    y0adder.io.in_sel := sgn(io.in_z)
+    y0adder.io.in_b := yreg
+    y0adder.io.in_sel := sgn(zreg)
 
-    z0adder.io.in_a := io.in_z //not index
+    z0adder.io.in_a := zreg //not index
     rom.io.atanselect := io.in_cc // index
     z0adder.io.in_b := rom.io.atanout
-    z0adder.io.in_sel := sgn(io.in_z)
+    z0adder.io.in_sel := ~sgn(zreg)
+    io.dbg_out_atan := rom.io.atanout
 
     /* Assign module's final outputs */
-    io.out_x := x0adder.io.out_s
-    io.out_y := y0adder.io.out_s
-    io.out_z := z0adder.io.out_s
+    io.out_x := xn
+    io.out_y := yn
+    io.out_z := zn
+
+
   }
 
   class CORDIC_ROM(bw : Int) extends Module {
