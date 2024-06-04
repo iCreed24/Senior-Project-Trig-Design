@@ -20,19 +20,27 @@ import FP_Modules.FloatingPointDesigns._
         val out_s = Output(UInt(bw.W))
       })
 
+    /* in_sel is 1 for subtraction, 0 for addition */
     val adder = Module(new FP_adder(bw))
-    val subber = Module(new FP_subber(bw))
-
 
     adder.io.in_a := io.in_a
-    adder.io.in_b := io.in_b
+    adder.io.in_b := Mux(io.in_sel === 0.U, io.in_b(bw - 1), ~io.in_b(bw - 1)) ## io.in_b(bw - 2, 0)
+
+    io.out_s := adder.io.out_s
+  }
+
+  class FloatCmp(bw : Int) extends Module
+  {
+    val io = IO(new Bundle() {
+      val in_a = Input(UInt(bw.W))
+      val in_b = Input(UInt(bw.W))
+      val out_bga = Output(UInt(1.W))
+    })
+    /* out_agb is 1 when b > a */
+    val subber = Module(new FP_subber(bw))
     subber.io.in_a := io.in_a
     subber.io.in_b := io.in_b
-
-    if(1.U == io.in_sel)
-      io.out_s := adder.io.out_s
-    else
-      io.out_s := subber.io.out_s
+    io.out_bga := subber.io.out_s(bw - 1)
   }
 
   class FloatHalver(bw: Int) extends Module
@@ -56,7 +64,28 @@ import FP_Modules.FloatingPointDesigns._
     subber.io.in_c := 0.U //0 carry in
     subber.io.in_a := io.in(bw - 2, bw - (1 + GetExponentFieldWidth(bw)))
     subber.io.in_b := io.amt
-    io.out := io.in(bw-1) ## subber.io.out_s ## io.in(bw - (2 + GetExponentFieldWidth(bw)), 0)
+    io.out := Mux(io.in === 0.U, 0.U, io.in(bw-1) ## subber.io.out_s ## io.in(bw - (2 + GetExponentFieldWidth(bw)), 0))
+  }
+
+  class CORDIC_Controller(bw : Int) extends Module
+  {
+    require(bw == 16 || bw == 32 || bw == 64 || bw == 128)
+    val io = IO(new Bundle() {
+      val out_output_rdy = Output(UInt(1.W))
+      val out_pipe_rdy = Output(UInt(1.W))
+    })
+
+    val iteration_count = RegInit(0.U(bw.W))
+    val pipeline_count = RegInit(0.U(bw.W))
+
+    // Need an iteration per bit of precision. When this resets to 0, the output should be ready
+
+
+    io.out_output_rdy := Mux(iteration_count === bw.U - 1.U, 1.U, 0.U) // When output is ready, there have been bw iterations
+    io.out_pipe_rdy := Mux(pipeline_count === 3.U, 1.U, 0.U) // When pipe_rdy is high, an iteration is complete
+
+    pipeline_count := Mux( pipeline_count === 4.U, 0.U, pipeline_count + 1.U)
+    iteration_count := Mux( iteration_count === 31.U, 0.U, iteration_count + 1.U)
   }
 
   class CORDIC(bw : Int) extends Module
@@ -72,60 +101,97 @@ import FP_Modules.FloatingPointDesigns._
       val out_y = Output(UInt(bw.W))
       val out_z = Output(UInt(bw.W))
       val dbg_out_atan = Output((UInt(bw.W)))
+      val dbg_out_counter = Output(UInt(log2Up(bw).W))
+      val out_output_ready = Output((UInt(1.W)))
+      val out_pipe_ready = Output((UInt(1.W)))
     })
 
-    val rom = Module(new CORDIC_ROM(bw))
-    val yhalver0 = Module(new FloatHalver(bw))
-    val xhalver0 = Module(new FloatHalver(bw))
+    val controller = Module(new CORDIC_Controller(bw))
+    io.out_output_ready := controller.io.out_output_rdy
+    io.out_pipe_ready := controller.io.out_pipe_rdy
 
-    val x0adder = Module(new AdderSubber(bw))
-    val y0adder = Module(new AdderSubber(bw))
-    val z0adder = Module(new AdderSubber(bw))
+    val rom = Module(new CORDIC_ROM(bw))
 
     def sgn(float : UInt) : UInt = {
       float(bw - 1)
     }
-    var xn = Wire(UInt(bw.W))
-    var yn = Wire(UInt(bw.W))
-    var zn = Wire(UInt(bw.W))
 
-    val xreg = Reg(UInt(bw.W))
-    val yreg = Reg(UInt(bw.W))
-    val zreg = Reg(UInt(bw.W))
+    //Stage 1
+    val x_st1 = RegInit(io.in_x0)
+    val y_st1 = RegInit(io.in_y0)
+    val theta_st1 = RegInit(0.U(bw.W))
+    val cnt_st1 = RegInit(0.U(log2Up(bw).W))
+    x_st1 := io.in_x0
+    y_st1 := io.in_y0
+    theta_st1 := io.in_z0
+    io.dbg_out_counter := cnt_st1
 
-    xreg := Mux(io.in_cc === 0.U, io.in_x0, xn)
-    yreg := Mux(io.in_cc === 0.U, io.in_y0, yn)
-    zreg := Mux(io.in_cc === 0.U, io.in_z0, zn)
+    //Stage 2
+    val x_st2 = RegInit(0.U(bw.W))
+    val y_st2 = RegInit(0.U(bw.W))
+    val theta_st2 = RegInit(0.U(bw.W))
+    val cnt_st2 = RegInit(0.U(log2Up(bw).W))
+    x_st2 := x_st1
+    y_st2 := y_st1
+    theta_st2 := theta_st1
+    cnt_st2 := cnt_st1
 
-    xn := x0adder.io.out_s
-    yn := y0adder.io.out_s
-    zn := z0adder.io.out_s
+    val floatcmp = Module(new FloatCmp(bw))
+    floatcmp.io.in_a := io.in_z0
+    floatcmp.io.in_b := theta_st1
 
-    yhalver0.io.in := yreg
-    yhalver0.io.amt := io.in_cc // same idx as the one into the atan table
-    xhalver0.io.in := xreg
-    xhalver0.io.amt := io.in_cc// same idx as the one into the atan table
 
-    x0adder.io.in_a := xreg
-    x0adder.io.in_b := yhalver0.io.out // shifted y
-    x0adder.io.in_sel := ~sgn(zreg) // 1 is add, 0 is sub
+    //Stage 3
+    val x_st3 = RegInit(0.U(bw.W))
+    val y_st3 = RegInit(0.U(bw.W))
+    val theta_st3 = RegInit(0.U(bw.W))
+    val cnt_st3 = RegInit(0.U(log2Up(bw).W))
+    val agb_st3 = RegInit(0.U(1.W))
+    agb_st3 := ~floatcmp.io.out_bga
 
-    y0adder.io.in_a := xhalver0.io.out
-    y0adder.io.in_b := yreg
-    y0adder.io.in_sel := sgn(zreg)
+    x_st3 := x_st2
+    y_st3 := y_st2
+    theta_st3 := theta_st2
+    cnt_st3 := cnt_st2
+    val yhalver = Module(new FloatHalver(bw))
+    val xhalver = Module(new FloatHalver(bw))
+    xhalver.io.in := x_st2
+    xhalver.io.amt := cnt_st2
+    yhalver.io.in := y_st2
+    yhalver.io.amt := cnt_st2
+    val theta_addersubber = Module(new AdderSubber(bw))
+    theta_addersubber.io.in_a := theta_st2
+    rom.io.atanselect := cnt_st2 // This doesn't have a clock so it should be combinational?
+    theta_addersubber.io.in_b := rom.io.atanout
+    theta_addersubber.io.in_sel := floatcmp.io.out_bga // alpha > theta ? 1 : 0; and sel === 0 means add
 
-    z0adder.io.in_a := zreg //not index
-    rom.io.atanselect := io.in_cc // index
-    z0adder.io.in_b := rom.io.atanout
-    z0adder.io.in_sel := ~sgn(zreg)
+    //Stage 4
+    val x_st4 = RegInit(0.U(bw.W))
+    val y_st4 = RegInit(0.U(bw.W))
+    val theta_st4 = RegInit(0.U(bw.W))
+    val cnt_st4 = RegInit (0.U(log2Up(bw).W))
+
+    x_st4 := x_st3
+    y_st4 := y_st3
+    theta_st4 := theta_addersubber.io.out_s
+    cnt_st4 := cnt_st3 + 1.U
+
+    val xadder = Module(new AdderSubber(bw))
+    val yadder = Module(new AdderSubber(bw))
+
+    xadder.io.in_a := x_st3
+    xadder.io.in_b := yhalver.io.out
+    xadder.io.in_sel := ~agb_st3
+
+    yadder.io.in_a := xhalver.io.out
+    yadder.io.in_b := y_st3
+    yadder.io.in_sel := agb_st3
+
+    //Stage 5
+    io.out_x := xadder.io.out_s
+    io.out_y := yadder.io.out_s
+    io.out_z := theta_st4
     io.dbg_out_atan := rom.io.atanout
-
-    /* Assign module's final outputs */
-    io.out_x := xn
-    io.out_y := yn
-    io.out_z := zn
-
-
   }
 
   class CORDIC_ROM(bw : Int) extends Module {
@@ -410,8 +476,8 @@ import FP_Modules.FloatingPointDesigns._
   }
 
 object Main extends App {
-  val sw2 = new PrintWriter("test.v")
-  sw2.println(getVerilogString(new TestMux(8)))
+  val sw2 = new PrintWriter("addersubber.v")
+  sw2.println(getVerilogString(new AdderSubber(32)))
 
   sw2.close()
 
@@ -422,4 +488,8 @@ object Main extends App {
   val sw4 = new PrintWriter("testcordic.v")
   sw4.println(getVerilogString(new CORDIC(32)))
   sw4.close()
+
+  val sw5 = new PrintWriter("floatcmp.v")
+  sw5.println(getVerilogString(new FloatCmp(32)))
+  sw5.close()
 }
