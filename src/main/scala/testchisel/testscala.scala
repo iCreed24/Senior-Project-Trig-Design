@@ -34,13 +34,13 @@ import FP_Modules.FloatingPointDesigns._
     val io = IO(new Bundle() {
       val in_a = Input(UInt(bw.W))
       val in_b = Input(UInt(bw.W))
-      val out_bga = Output(UInt(1.W))
+      val out_ageb= Output(UInt(1.W))
     })
     /* out_agb is 1 when b > a */
     val subber = Module(new FP_subber(bw))
     subber.io.in_a := io.in_a
     subber.io.in_b := io.in_b
-    io.out_bga := subber.io.out_s(bw - 1)
+    io.out_ageb := ~subber.io.out_s(bw - 1) | (subber.io.out_s === 0.U)
   }
 
   class FloatHalver(bw: Int) extends Module
@@ -82,7 +82,7 @@ import FP_Modules.FloatingPointDesigns._
 
 
     io.out_output_rdy := Mux(iteration_count === bw.U - 1.U, 1.U, 0.U) // When output is ready, there have been bw iterations
-    io.out_pipe_rdy := Mux(pipeline_count === 3.U, 1.U, 0.U) // When pipe_rdy is high, an iteration is complete
+    io.out_pipe_rdy := Mux(pipeline_count === 4.U, 1.U, 0.U) // When pipe_rdy is high, an iteration is complete
 
     pipeline_count := Mux( pipeline_count === 4.U, 0.U, pipeline_count + 1.U)
     iteration_count := Mux( iteration_count === 31.U, 0.U, iteration_count + 1.U)
@@ -117,14 +117,28 @@ import FP_Modules.FloatingPointDesigns._
     }
 
     //Stage 1
+    val x_st5 = RegInit(0.U(bw.W))
+    val y_st5 = RegInit(0.U(bw.W))
+    val theta_st5 = RegInit(0.U(bw.W))
+    val cnt_st5 = RegInit (0.U(log2Up(bw).W))
+
+    val x_st4 = RegInit(0.U(bw.W))
+    val y_st4 = RegInit(0.U(bw.W))
+    val theta_st4 = RegInit(0.U(bw.W))
+    val cnt_st4 = RegInit (0.U(log2Up(bw).W))
+
+    val xadder = Module(new AdderSubber(bw))
+    val yadder = Module(new AdderSubber(bw))
+
     val x_st1 = RegInit(io.in_x0)
     val y_st1 = RegInit(io.in_y0)
     val theta_st1 = RegInit(0.U(bw.W))
     val cnt_st1 = RegInit(0.U(log2Up(bw).W))
-    x_st1 := io.in_x0
-    y_st1 := io.in_y0
-    theta_st1 := io.in_z0
+    x_st1 := Mux(controller.io.out_pipe_rdy === 1.U, x_st5, io.in_x0)
+    y_st1 := Mux(controller.io.out_pipe_rdy === 1.U, y_st5, io.in_y0)
+    theta_st1 := Mux(controller.io.out_pipe_rdy === 1.U, theta_st5, io.in_z0)
     io.dbg_out_counter := cnt_st1
+    cnt_st1 := Mux(controller.io.out_pipe_rdy === 1.U, cnt_st5, 0.U)
 
     //Stage 2
     val x_st2 = RegInit(0.U(bw.W))
@@ -137,17 +151,16 @@ import FP_Modules.FloatingPointDesigns._
     cnt_st2 := cnt_st1
 
     val floatcmp = Module(new FloatCmp(bw))
-    floatcmp.io.in_a := io.in_z0
-    floatcmp.io.in_b := theta_st1
-
+    floatcmp.io.in_a := theta_st1
+    floatcmp.io.in_b := io.in_z0
 
     //Stage 3
     val x_st3 = RegInit(0.U(bw.W))
     val y_st3 = RegInit(0.U(bw.W))
     val theta_st3 = RegInit(0.U(bw.W))
     val cnt_st3 = RegInit(0.U(log2Up(bw).W))
-    val agb_st3 = RegInit(0.U(1.W))
-    agb_st3 := ~floatcmp.io.out_bga
+    val ageb_st3 = RegInit(0.U(1.W))
+    ageb_st3 := floatcmp.io.out_ageb
 
     x_st3 := x_st2
     y_st3 := y_st2
@@ -160,37 +173,36 @@ import FP_Modules.FloatingPointDesigns._
     yhalver.io.in := y_st2
     yhalver.io.amt := cnt_st2
     val theta_addersubber = Module(new AdderSubber(bw))
-    theta_addersubber.io.in_a := theta_st2
+    theta_addersubber.io.in_a := theta_st2 //theta
     rom.io.atanselect := cnt_st2 // This doesn't have a clock so it should be combinational?
-    theta_addersubber.io.in_b := rom.io.atanout
-    theta_addersubber.io.in_sel := floatcmp.io.out_bga // alpha > theta ? 1 : 0; and sel === 0 means add
+    theta_addersubber.io.in_b := rom.io.atanout // alpha
+    theta_addersubber.io.in_sel := floatcmp.io.out_ageb // sel === 0 means add
 
     //Stage 4
-    val x_st4 = RegInit(0.U(bw.W))
-    val y_st4 = RegInit(0.U(bw.W))
-    val theta_st4 = RegInit(0.U(bw.W))
-    val cnt_st4 = RegInit (0.U(log2Up(bw).W))
 
-    x_st4 := x_st3
-    y_st4 := y_st3
     theta_st4 := theta_addersubber.io.out_s
     cnt_st4 := cnt_st3 + 1.U
 
-    val xadder = Module(new AdderSubber(bw))
-    val yadder = Module(new AdderSubber(bw))
-
     xadder.io.in_a := x_st3
     xadder.io.in_b := yhalver.io.out
-    xadder.io.in_sel := ~agb_st3
+    xadder.io.in_sel := ~ageb_st3
 
     yadder.io.in_a := xhalver.io.out
     yadder.io.in_b := y_st3
-    yadder.io.in_sel := agb_st3
+    yadder.io.in_sel := ageb_st3
 
     //Stage 5
-    io.out_x := xadder.io.out_s
-    io.out_y := yadder.io.out_s
-    io.out_z := theta_st4
+
+    y_st4 := yadder.io.out_s
+
+    x_st5 := xadder.io.out_s
+    y_st5 := y_st4
+    theta_st5 := theta_st4
+    cnt_st5 := cnt_st4
+
+    io.out_x := x_st5
+    io.out_y := y_st5
+    io.out_z := theta_st5
     io.dbg_out_atan := rom.io.atanout
   }
 
