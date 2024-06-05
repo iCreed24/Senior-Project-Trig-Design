@@ -51,17 +51,20 @@ class CORDIC_Controller(bw: Int) extends Module {
   val io = IO(new Bundle() {
     val out_output_rdy: UInt = Output(UInt(1.W))
     val out_pipe_rdy: UInt = Output(UInt(1.W))
+    val out_feedback_rdy: UInt = Output(UInt(1.W))
+    val out_pipeline_count : UInt = Output(UInt(bw.W))
   })
 
   private val iteration_count = RegInit(0.U(bw.W))
   val pipeline_count : UInt = RegInit(0.U(bw.W))
-
+  io.out_pipeline_count := pipeline_count
   // Need an iteration per bit of precision. When this resets to 0, the output should be ready
 
+  io.out_feedback_rdy := Mux(pipeline_count === 2.U, 1.U, 0.U);
   io.out_output_rdy := Mux(iteration_count === bw.U - 1.U, 1.U, 0.U) // When output is ready, there have been bw iterations
   io.out_pipe_rdy := Mux(pipeline_count === 3.U, 1.U, 0.U) // When pipe_rdy is high, an iteration is complete
 
-  pipeline_count := Mux(pipeline_count === 4.U, 0.U, pipeline_count + 1.U)
+  pipeline_count := Mux(pipeline_count === 3.U, 1.U, pipeline_count + 1.U)
   iteration_count := Mux(iteration_count === 31.U, 0.U, iteration_count + 1.U)
 }
 
@@ -76,21 +79,22 @@ class CORDIC(bw: Int) extends Module {
     val out_x : UInt = Output(UInt(bw.W))
     val out_y : UInt = Output(UInt(bw.W))
     val out_z : UInt = Output(UInt(bw.W))
-    val dbg_out_atan : UInt = Output((UInt(bw.W)))
-    val dbg_out_counter : UInt = Output(UInt(log2Up(bw).W))
     val out_output_ready : UInt = Output((UInt(1.W)))
     val out_pipe_ready : UInt = Output((UInt(1.W)))
+    val out_pipeline_count : UInt = Output((UInt(bw.W)))
   })
 
-  private val stages : Int = 5
+  private val stages : Int = 3
   private val x = RegInit(VecInit.fill(stages)(0.U(bw.W)))
   private val y = RegInit(VecInit.fill(stages)(0.U(bw.W)))
+  private val z = RegInit(VecInit.fill(stages)(0.U(bw.W)))
   private val theta = RegInit(VecInit.fill(stages)(0.U(bw.W)))
   private val cnt = RegInit(VecInit.fill(stages)(0.U(bw.W)))
 
   private val controller = Module(new CORDIC_Controller(bw))
   io.out_output_ready := controller.io.out_output_rdy
   io.out_pipe_ready := controller.io.out_pipe_rdy
+  io.out_pipeline_count := controller.io.out_pipeline_count
 
   private val rom = Module(new CORDIC_ROM(bw))
 
@@ -103,70 +107,60 @@ class CORDIC(bw: Int) extends Module {
   private val xadder = Module(new AdderSubber(bw))
   private val yadder = Module(new AdderSubber(bw))
 
-  x(0) := Mux(controller.io.out_pipe_rdy === 1.U, x(4), io.in_x0)
-  y(0) := Mux(controller.io.out_pipe_rdy === 1.U, y(4), io.in_y0)
-  theta(0) := Mux(controller.io.out_pipe_rdy === 1.U, theta(4), 0.U)
-  io.dbg_out_counter := cnt(0)
-  cnt(0) := Mux(controller.io.out_pipe_rdy === 1.U, cnt(3) + 1.U, 0.U)
+  x(0) := Mux(controller.io.out_pipe_rdy === 1.U, x(2), io.in_x0)
+  y(0) := Mux(controller.io.out_pipe_rdy === 1.U, y(2), io.in_y0)
+  z(0) := Mux(controller.io.out_pipe_rdy === 1.U, z(2), io.in_z0)
+  theta(0) := Mux(controller.io.out_pipe_rdy === 1.U, theta(2), 0.U)
+  cnt(0) := Mux(controller.io.out_pipe_rdy === 1.U, cnt(2) + 1.U, 0.U)
+
+  io.out_x := Mux(controller.io.out_pipe_rdy === 1.U, x(2), 0.U)
+  io.out_y := Mux(controller.io.out_pipe_rdy === 1.U, y(2), 0.U)
+  io.out_z := Mux(controller.io.out_pipe_rdy === 1.U, theta(2), 0.U)
 
   //Stage 2
 
   x(1) := x(0)
   y(1) := y(0)
+  z(1) := z(0)
   theta(1) := theta(0)
   cnt(1) := cnt(0)
 
   private val floatcmp = Module(new FP_comparator(bw))
   floatcmp.io.in_a := theta(0)
-  floatcmp.io.in_b := io.in_z0
-  private val ageb_st3 = RegNext(floatcmp.io.out_s === theta(0))
-
-  //Stage 3
-
-
-  theta(2) := theta(1)
-  cnt(2) := cnt(1)
+  floatcmp.io.in_b := z(0)
 
   private val yhalver = Module(new FloatHalver(bw))
   private val xhalver = Module(new FloatHalver(bw))
 
-  xhalver.io.in := x(1)
-  xhalver.io.amt := cnt(1)
-  yhalver.io.in := y(1)
-  yhalver.io.amt := cnt(1)
+  xhalver.io.in := x(0)
+  xhalver.io.amt := cnt(0)
+  yhalver.io.in := y(0)
+  yhalver.io.amt := cnt(0)
 
-  xadder.io.in_a := x(1)
-  xadder.io.in_b := Mux(ageb_st3 === 1.U, ~yhalver.io.out(bw - 1),
+  xadder.io.in_a := x(0)
+  xadder.io.in_b := Mux(floatcmp.io.out_s === theta(0), ~yhalver.io.out(bw - 1),
       yhalver.io.out(bw - 1)) ## yhalver.io.out(bw - 2, 0)
   xadder.io.in_sel := 1.U
 
-  yadder.io.in_a := Mux(ageb_st3 === 1.U, ~xhalver.io.out(bw - 1),
+  yadder.io.in_a := Mux(floatcmp.io.out_s === theta(0), ~xhalver.io.out(bw - 1),
       xhalver.io.out(bw - 1)) ## xhalver.io.out(bw - 2, 0)
-  yadder.io.in_b := y(1)
+  yadder.io.in_b := y(0)
   yadder.io.in_sel := 0.U
 
   private val theta_addersubber = Module(new AdderSubber(bw))
-  theta_addersubber.io.in_a := theta(1) //theta
-  rom.io.atanselect := cnt(1) // This doesn't have a clock so it should be combinational?
+  theta_addersubber.io.in_a := theta(0) //theta
+  rom.io.atanselect := cnt(0) // This doesn't have a clock so it should be combinational?
   theta_addersubber.io.in_b := rom.io.atanout // alpha
-  theta_addersubber.io.in_sel := ageb_st3 // sel === 0 means add
+  theta_addersubber.io.in_sel := floatcmp.io.out_s === theta(0) // sel === 0 means add
+
+  //Stage 3
+
   x(2) := xadder.io.out_s
   y(2) := yadder.io.out_s
+  z(2) := z(1)
+  theta(2) := theta_addersubber.io.out_s
+  cnt(2) := cnt(1)
 
-  //Stage 4
-  x(3) := x(2)
-  y(3) := y(2)
-  theta(3) := theta_addersubber.io.out_s
-  cnt(3) := cnt(2)
-  io.out_x := xadder.io.out_s
-  io.out_y := yadder.io.out_s
-  io.out_z := theta(3)
-
-  //Stage 5
-  x(4) := x(3)
-  y(4) := y(3)
-  theta(4) := theta(3)
-  io.dbg_out_atan := rom.io.atanout
 }
 
 class CORDIC_ROM(bw: Int) extends Module {
