@@ -168,10 +168,15 @@ import FP_Modules.FloatingPointDesigns._
     cnt_st3 := cnt_st2
     val yhalver = Module(new FloatHalver(bw))
     val xhalver = Module(new FloatHalver(bw))
+    val xhalverout = RegInit(0.U(bw))
+    val yhalverout = RegInit(0.U(bw))
     xhalver.io.in := x_st2
     xhalver.io.amt := cnt_st2
     yhalver.io.in := y_st2
     yhalver.io.amt := cnt_st2
+    xhalverout := xhalver.io.out
+    yhalverout := yhalver.io.out
+
     val theta_addersubber = Module(new AdderSubber(bw))
     theta_addersubber.io.in_a := theta_st2 //theta
     rom.io.atanselect := cnt_st2 // This doesn't have a clock so it should be combinational?
@@ -184,18 +189,19 @@ import FP_Modules.FloatingPointDesigns._
     cnt_st4 := cnt_st3 + 1.U
 
     xadder.io.in_a := x_st3
-    xadder.io.in_b := yhalver.io.out
+    xadder.io.in_b := yhalverout
     xadder.io.in_sel := ~ageb_st3
 
-    yadder.io.in_a := xhalver.io.out
+    yadder.io.in_a := xhalverout
     yadder.io.in_b := y_st3
     yadder.io.in_sel := ageb_st3
 
-    //Stage 5
 
     y_st4 := yadder.io.out_s
+    x_st4 := xadder.io.out_s
+    //Stage 5
 
-    x_st5 := xadder.io.out_s
+    x_st5 := x_st4
     y_st5 := y_st4
     theta_st5 := theta_st4
     cnt_st5 := cnt_st4
