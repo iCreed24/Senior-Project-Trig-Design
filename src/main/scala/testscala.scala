@@ -18,22 +18,9 @@ class AdderSubber(bw: Int) extends Module {
   private val adder: FP_adder = Module(new FP_adder(bw))
 
   adder.io.in_a := io.in_a
-  adder.io.in_b := Mux(io.in_sel === 0.U, io.in_b(bw - 1), ~io.in_b(bw - 1)) ## io.in_b(bw - 2, 0)
+  adder.io.in_b := Mux(io.in_sel === 0.U, io.in_b(bw - 1), ~io.in_b(bw - 1) ) ## io.in_b(bw - 2, 0)
 
   io.out_s := adder.io.out_s
-}
-
-class FloatCmp(bw: Int) extends Module {
-  val io = IO(new Bundle() {
-    val in_a: UInt = Input(UInt(bw.W))
-    val in_b: UInt = Input(UInt(bw.W))
-    val out_ageb: UInt = Output(UInt(1.W))
-  })
-  /* out_agb is 1 when b > a */
-  private val subber = Module(new FP_subber(bw))
-  subber.io.in_a := io.in_a
-  subber.io.in_b := io.in_b
-  io.out_ageb := ~subber.io.out_s(bw - 1) | (subber.io.out_s === 0.U)
 }
 
 class FloatHalver(bw: Int) extends Module {
@@ -67,12 +54,12 @@ class CORDIC_Controller(bw: Int) extends Module {
   })
 
   private val iteration_count = RegInit(0.U(bw.W))
-  private val pipeline_count = RegInit(0.U(bw.W))
+  val pipeline_count : UInt = RegInit(0.U(bw.W))
 
   // Need an iteration per bit of precision. When this resets to 0, the output should be ready
 
   io.out_output_rdy := Mux(iteration_count === bw.U - 1.U, 1.U, 0.U) // When output is ready, there have been bw iterations
-  io.out_pipe_rdy := Mux(pipeline_count === 4.U, 1.U, 0.U) // When pipe_rdy is high, an iteration is complete
+  io.out_pipe_rdy := Mux(pipeline_count === 3.U, 1.U, 0.U) // When pipe_rdy is high, an iteration is complete
 
   pipeline_count := Mux(pipeline_count === 4.U, 0.U, pipeline_count + 1.U)
   iteration_count := Mux(iteration_count === 31.U, 0.U, iteration_count + 1.U)
@@ -95,109 +82,90 @@ class CORDIC(bw: Int) extends Module {
     val out_pipe_ready : UInt = Output((UInt(1.W)))
   })
 
+  private val stages : Int = 5
+  private val x = RegInit(VecInit.fill(stages)(0.U(bw.W)))
+  private val y = RegInit(VecInit.fill(stages)(0.U(bw.W)))
+  private val theta = RegInit(VecInit.fill(stages)(0.U(bw.W)))
+  private val cnt = RegInit(VecInit.fill(stages)(0.U(bw.W)))
+
   private val controller = Module(new CORDIC_Controller(bw))
   io.out_output_ready := controller.io.out_output_rdy
   io.out_pipe_ready := controller.io.out_pipe_rdy
 
-  val rom = Module(new CORDIC_ROM(bw))
+  private val rom = Module(new CORDIC_ROM(bw))
 
   def sgn(float: UInt): UInt = {
     float(bw - 1)
   }
 
   //Stage 1
-  val x_st5 = RegInit(0.U(bw.W))
-  val y_st5 = RegInit(0.U(bw.W))
-  val theta_st5 = RegInit(0.U(bw.W))
-  val cnt_st5 = RegInit(0.U(log2Up(bw).W))
 
-  val x_st4 = RegInit(0.U(bw.W))
-  val y_st4 = RegInit(0.U(bw.W))
-  val theta_st4 = RegInit(0.U(bw.W))
-  val cnt_st4 = RegInit(0.U(log2Up(bw).W))
+  private val xadder = Module(new AdderSubber(bw))
+  private val yadder = Module(new AdderSubber(bw))
 
-  val xadder = Module(new AdderSubber(bw))
-  val yadder = Module(new AdderSubber(bw))
-
-  val x_st1 = RegInit(io.in_x0)
-  val y_st1 = RegInit(io.in_y0)
-  val theta_st1 = RegInit(0.U(bw.W))
-  val cnt_st1 = RegInit(0.U(log2Up(bw).W))
-  x_st1 := Mux(controller.io.out_pipe_rdy === 1.U, x_st5, io.in_x0)
-  y_st1 := Mux(controller.io.out_pipe_rdy === 1.U, y_st5, io.in_y0)
-  theta_st1 := Mux(controller.io.out_pipe_rdy === 1.U, theta_st5, io.in_z0)
-  io.dbg_out_counter := cnt_st1
-  cnt_st1 := Mux(controller.io.out_pipe_rdy === 1.U, cnt_st5, 0.U)
+  x(0) := Mux(controller.io.out_pipe_rdy === 1.U, x(4), io.in_x0)
+  y(0) := Mux(controller.io.out_pipe_rdy === 1.U, y(4), io.in_y0)
+  theta(0) := Mux(controller.io.out_pipe_rdy === 1.U, theta(4), 0.U)
+  io.dbg_out_counter := cnt(0)
+  cnt(0) := Mux(controller.io.out_pipe_rdy === 1.U, cnt(3) + 1.U, 0.U)
 
   //Stage 2
-  val x_st2 = RegInit(0.U(bw.W))
-  val y_st2 = RegInit(0.U(bw.W))
-  val theta_st2 = RegInit(0.U(bw.W))
-  val cnt_st2 = RegInit(0.U(log2Up(bw).W))
-  x_st2 := x_st1
-  y_st2 := y_st1
-  theta_st2 := theta_st1
-  cnt_st2 := cnt_st1
 
-  val floatcmp = Module(new FloatCmp(bw))
-  floatcmp.io.in_a := theta_st1
+  x(1) := x(0)
+  y(1) := y(0)
+  theta(1) := theta(0)
+  cnt(1) := cnt(0)
+
+  private val floatcmp = Module(new FP_comparator(bw))
+  floatcmp.io.in_a := theta(0)
   floatcmp.io.in_b := io.in_z0
+  private val ageb_st3 = RegNext(floatcmp.io.out_s === theta(0))
 
   //Stage 3
-  val x_st3 = RegInit(0.U(bw.W))
-  val y_st3 = RegInit(0.U(bw.W))
-  val theta_st3 = RegInit(0.U(bw.W))
-  val cnt_st3 = RegInit(0.U(log2Up(bw).W))
-  val ageb_st3 = RegInit(0.U(1.W))
-  ageb_st3 := floatcmp.io.out_ageb
 
-  x_st3 := x_st2
-  y_st3 := y_st2
-  theta_st3 := theta_st2
-  cnt_st3 := cnt_st2
-  val yhalver = Module(new FloatHalver(bw))
-  val xhalver = Module(new FloatHalver(bw))
-  val xhalverout = RegInit(0.U(bw))
-  val yhalverout = RegInit(0.U(bw))
-  xhalver.io.in := x_st2
-  xhalver.io.amt := cnt_st2
-  yhalver.io.in := y_st2
-  yhalver.io.amt := cnt_st2
-  xhalverout := xhalver.io.out
-  yhalverout := yhalver.io.out
 
-  val theta_addersubber = Module(new AdderSubber(bw))
-  theta_addersubber.io.in_a := theta_st2 //theta
-  rom.io.atanselect := cnt_st2 // This doesn't have a clock so it should be combinational?
+  theta(2) := theta(1)
+  cnt(2) := cnt(1)
+
+  private val yhalver = Module(new FloatHalver(bw))
+  private val xhalver = Module(new FloatHalver(bw))
+
+  xhalver.io.in := x(1)
+  xhalver.io.amt := cnt(1)
+  yhalver.io.in := y(1)
+  yhalver.io.amt := cnt(1)
+
+  xadder.io.in_a := x(1)
+  xadder.io.in_b := Mux(ageb_st3 === 1.U, ~yhalver.io.out(bw - 1),
+      yhalver.io.out(bw - 1)) ## yhalver.io.out(bw - 2, 0)
+  xadder.io.in_sel := 1.U
+
+  yadder.io.in_a := Mux(ageb_st3 === 1.U, ~xhalver.io.out(bw - 1),
+      xhalver.io.out(bw - 1)) ## xhalver.io.out(bw - 2, 0)
+  yadder.io.in_b := y(1)
+  yadder.io.in_sel := 0.U
+
+  private val theta_addersubber = Module(new AdderSubber(bw))
+  theta_addersubber.io.in_a := theta(1) //theta
+  rom.io.atanselect := cnt(1) // This doesn't have a clock so it should be combinational?
   theta_addersubber.io.in_b := rom.io.atanout // alpha
-  theta_addersubber.io.in_sel := floatcmp.io.out_ageb // sel === 0 means add
+  theta_addersubber.io.in_sel := ageb_st3 // sel === 0 means add
+  x(2) := xadder.io.out_s
+  y(2) := yadder.io.out_s
 
   //Stage 4
+  x(3) := x(2)
+  y(3) := y(2)
+  theta(3) := theta_addersubber.io.out_s
+  cnt(3) := cnt(2)
+  io.out_x := xadder.io.out_s
+  io.out_y := yadder.io.out_s
+  io.out_z := theta(3)
 
-  theta_st4 := theta_addersubber.io.out_s
-  cnt_st4 := cnt_st3 + 1.U
-
-  xadder.io.in_a := x_st3
-  xadder.io.in_b := yhalverout
-  xadder.io.in_sel := ~ageb_st3
-
-  yadder.io.in_a := xhalverout
-  yadder.io.in_b := y_st3
-  yadder.io.in_sel := ageb_st3
-
-
-  y_st4 := yadder.io.out_s
-  x_st4 := xadder.io.out_s
   //Stage 5
-
-  x_st5 := x_st4
-  y_st5 := y_st4
-  theta_st5 := theta_st4
-  cnt_st5 := cnt_st4
-
-  io.out_x := x_st5
-  io.out_y := y_st5
-  io.out_z := theta_st5
+  x(4) := x(3)
+  y(4) := y(3)
+  theta(4) := theta(3)
   io.dbg_out_atan := rom.io.atanout
 }
 
@@ -481,7 +449,7 @@ class CORDIC_ROM(bw: Int) extends Module {
 
 object Main extends App {
 
-  private val pw = new PrintWriter("testcordic.v")
+  val pw = new PrintWriter("testcordic.v")
   pw.println(getVerilogString(new CORDIC(32)))
   pw.close()
 
