@@ -61,11 +61,15 @@ class CORDIC_Controller(bw: Int) extends Module {
   // Need an iteration per bit of precision. When this resets to 0, the output should be ready
 
   io.out_feedback_rdy := Mux(pipeline_count === 2.U, 1.U, 0.U);
-  io.out_output_rdy := Mux(iteration_count === bw.U - 1.U, 1.U, 0.U) // When output is ready, there have been bw iterations
+  /* The output ready signal manually adjusted to account for precision loss relative to
+  the version of the algorithm using fixed point arithmetic -- we reach our maximum precision sooner because
+  some of the bits in the floating point format are wasted on functions with a restricted and well-known domain/codomain */
+
+  io.out_output_rdy := Mux(iteration_count === bw.U - 2.U && io.out_pipe_rdy === 1.U, 1.U, 0.U) // When output is ready, there have been bw iterations
   io.out_pipe_rdy := Mux(pipeline_count === 3.U, 1.U, 0.U) // When pipe_rdy is high, an iteration is complete
 
   pipeline_count := Mux(pipeline_count === 3.U, 1.U, pipeline_count + 1.U)
-  iteration_count := Mux(iteration_count === 31.U, 0.U, iteration_count + 1.U)
+  iteration_count := Mux(pipeline_count === 3.U, Mux(iteration_count === bw.U + 1.U, 0.U, iteration_count + 1.U), iteration_count)
 }
 
 class CORDIC(bw: Int) extends Module {
@@ -74,7 +78,6 @@ class CORDIC(bw: Int) extends Module {
     val in_x0 : UInt = Input(UInt(bw.W))
     val in_y0 : UInt = Input(UInt(bw.W))
     val in_z0 : UInt = Input(UInt(bw.W))
-    val in_cc : UInt = Input(UInt(log2Up(bw).W))
 
     val out_x : UInt = Output(UInt(bw.W))
     val out_y : UInt = Output(UInt(bw.W))
@@ -113,9 +116,9 @@ class CORDIC(bw: Int) extends Module {
   theta(0) := Mux(controller.io.out_pipe_rdy === 1.U, theta(2), 0.U)
   cnt(0) := Mux(controller.io.out_pipe_rdy === 1.U, cnt(2) + 1.U, 0.U)
 
-  io.out_x := Mux(controller.io.out_pipe_rdy === 1.U, x(2), 0.U)
-  io.out_y := Mux(controller.io.out_pipe_rdy === 1.U, y(2), 0.U)
-  io.out_z := Mux(controller.io.out_pipe_rdy === 1.U, theta(2), 0.U)
+  io.out_x :=  x(2)
+  io.out_y :=  y(2)
+  io.out_z := theta(2)
 
   //Stage 2
 
@@ -166,19 +169,34 @@ class CORDIC(bw: Int) extends Module {
 class CORDIC_ROM(bw: Int) extends Module {
   val io = IO(new Bundle() {
     val k = Output(UInt(bw.W))
+    val invk = Output(UInt(bw.W))
     val atanout = Output(UInt(bw.W))
 
-    val atanselect = Input(UInt(log2Up(bw).W))
+    val atanselect = Input(UInt(log2Up(bw).W + 1))
   })
 
-  var quadprec_k = scala.BigInt("0", 16)
-  var doubleprec_k = scala.BigInt("0", 10)
-  var singleprec_k = UInt(32.W)
-  var halfprec_k = UInt(16.W)
+  private var quadprec_k = scala.BigInt("0", 16)
+  private var doubleprec_k = scala.BigInt("0", 10)
+  private var singleprec_k = UInt(32.W)
+  private var halfprec_k = UInt(16.W)
 
-  val atantable = Wire(Vec(bw, UInt(bw.W)))
+  private var invquadprec_k = scala.BigInt("3fffa592148cfb84d103c1366ddf3b11", 16)
+  private var invdoubleprec_k = scala.BigInt("4610095168057489485", 10)
+  private var invsingleprec_k = 1070778634.U
+  private var invhalfprec_k = 16022.U
+
+
+  val atantable = Wire(Vec(bw + 2, UInt(bw.W)))
 
   io.atanout := atantable(io.atanselect)
+
+  bw match {
+    case 16 => io.invk := 16022.U
+    case 32 => io.invk := 1070778634.U
+    case 64 => io.invk := scala.BigInt("4610095168057489485", 10).U
+    case 128 => io.invk := scala.BigInt("3fffa592148cfb84d103c1366ddf3b11", 16).U
+  }
+
 
   bw match {
     case 16 => io.k := 14556.U
@@ -417,6 +435,9 @@ class CORDIC_ROM(bw: Int) extends Module {
     atantable(29) := 822083584.U //0.000000
     atantable(30) := 813694976.U //0.000000
     atantable(31) := 1078530011.U //3.141593
+    atantable(32) := 1061752795.U //0.785398
+    atantable(33) := 1055744824.U //0.463648
+
   }
   else if (16 == bw) {
     atantable(0) := 14920.U //0.785156
