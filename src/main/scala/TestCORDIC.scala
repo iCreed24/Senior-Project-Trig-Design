@@ -148,7 +148,7 @@ val io = IO(new Bundle() {
 })
 
   val atantable = Wire(Vec(bw, UInt(bw.W)))
-  atantable(0) := 210828720.U //Q4.28 fixed point of 0.785398
+  atantable(0) := 210828720.U//Q4.28 fixed point of 0.785398
   atantable(1) := 124459456.U //Q4.28 fixed point of 0.463648
   atantable(2) := 65760960.U //Q4.28 fixed point of 0.244979
   atantable(3) := 33381290.U //Q4.28 fixed point of 0.124355
@@ -191,9 +191,10 @@ val io = IO(new Bundle() {
   tofixedy0.io.in := io.in_y0
   tofixedz0.io.in := io.in_z0
 
-  val x = Reg(Vec(bw, SInt(bw.W)))
-  val y = Reg(Vec(bw, SInt(bw.W)))
-  var theta = Reg(Vec(bw, UInt(bw.W)))
+  val x = RegInit(VecInit(Seq.fill(bw)(0.S(bw.W))))
+  val y = RegInit(VecInit(Seq.fill(bw)(0.S(bw.W))))
+  var theta = RegInit(VecInit(Seq.fill(bw)(0.S(bw.W))))
+  var z0s = RegInit(VecInit(Seq.fill(bw)(0.S(bw.W))))
 
   /* Floating point inputs converted to fixed point */
   val fixedx0 = tofixedx0.io.out
@@ -201,19 +202,21 @@ val io = IO(new Bundle() {
   val fixedz0 = tofixedz0.io.out
 
 
-  theta(0) := 0.U
+  theta(0) := 0.S
   x(0) := fixedx0.asSInt
   y(0) := fixedy0.asSInt
+  z0s(0) := fixedz0.asSInt
 
   for(n <- 0 to 30){
 
-    var fxxterm = Mux(theta(n) >= fixedz0, -x(n), x(n))
-    var fxyterm = Mux(theta(n) >= fixedz0, -y(n), y(n))
-    var fxthetaterm = Mux(theta(n) >= fixedz0, -atantable(n), atantable(n))
+    var fxxterm = Mux(theta(n) > z0s(n), -x(n), x(n))
+    var fxyterm = Mux(theta(n) > z0s(n), -y(n), y(n))
+    var fxthetaterm = Mux(theta(n) > z0s(n), -atantable(n), atantable(n))
 
-    theta(n + 1) := theta(n) + fxthetaterm;
+    theta(n + 1) := theta(n) + fxthetaterm.asSInt;
     x(n + 1) := x(n) - (fxyterm >> n.asUInt).asSInt
     y(n + 1) := (fxxterm >> n.asUInt).asSInt + y(n)
+    z0s(n + 1) := z0s(n)
   }
 
   val tofloatxout = Module(new FixedToFloat32())
@@ -222,7 +225,7 @@ val io = IO(new Bundle() {
 
   tofloatxout.io.in := x(31).asUInt
   tofloatyout.io.in := y(31).asUInt
-  tofloatzout.io.in := theta(31)
+  tofloatzout.io.in := z0s(31).asUInt
 
   io.out_x := tofloatxout.io.out
   io.out_y := tofloatyout.io.out
