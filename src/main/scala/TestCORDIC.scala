@@ -5,6 +5,68 @@ import Binary_Modules.BinaryDesigns._
 import FP_Modules.FloatingPointDesigns._
 
 
+class FloatToFixed32 extends Module {
+  /* Converts a single precision float to a Q4.28 fixed point number */
+  /* Q4.28 means a fixed point number w/ 4 integer bits, 28 fractional */
+  val io = IO(new Bundle() {
+    val in : UInt = Input(UInt(32.W))
+    val out : UInt = Output(UInt(32.W))
+  })
+  val frac : UInt = ("b000000000".U(9.W) ## io.in(22, 0))
+  val exp : UInt = io.in(30, 23)
+  val sign : UInt = io.in(31)
+  val shiftamt = (exp - 127.U(8.W)).asSInt
+
+  val data = Mux(shiftamt(7) === 1.U,
+                    ((frac(31,0) | 0x00800000.U(32.W)) << 5.U) >> (-shiftamt).asUInt,
+                    ((frac(31,0) | 0x00800000.U(32.W)) << 5.U) << (shiftamt).asUInt).asUInt
+  io.out := Mux(io.in(31) === 1.U, 0.U - data, data)
+}
+
+class CLZ32 extends Module{
+  val io = IO(new Bundle() {
+    val in : UInt = Input(UInt(32.W))
+    val out : UInt = Output(UInt(5.W))
+  })
+  /* Uses a sequence of masks in a binary search to find the number of leading zeros */
+  val x = io.in
+  val ax = x
+  val bx = Mux((ax & 0xFFFF0000L.U) === 0.U, ax << 16, ax)
+  val cx = Mux((bx & 0xFF000000L.U) === 0.U, bx << 8, bx)
+  val dx = Mux((cx & 0xF0000000L.U) === 0.U, cx << 4, cx)
+  val ex = Mux((dx & 0xC0000000L.U) === 0.U, dx << 2, dx)
+  
+  io.out := ((ax & 0xFFFF0000L.U) === 0.U) ## ((bx & 0xFF000000L.U) === 0.U) ## ((cx & 0xF0000000L.U) === 0.U) ##
+    ((dx & 0xC0000000L.U) === 0.U) ## ((ex & 0x80000000L.U) === 0.U)
+
+}
+
+class FixedToFloat32 extends Module {
+  /* Converts a Q4.28 fixed point number to a single precision float */
+  /* Q4.28 means a fixed point number w/ 4 integer bits, 28 fractional */
+  val io = IO(new Bundle() {
+    val in : UInt = Input(UInt(32.W))
+    val out : UInt = Output(UInt(32.W))
+  })
+
+  val sign  = Wire(UInt(1.W))
+  val exp = Wire(SInt(8.W))
+  val frac = Wire(UInt(64.W))
+
+  val data = Wire(UInt(32.W))
+  data := Mux(io.in(31) === 1.U, (~io.in).asUInt + 1.U, io.in)
+  sign := io.in(31)
+
+  val clz32 = Module(new CLZ32())
+  clz32.io.in := data
+  val leadingzeros = clz32.io.out
+
+  exp := ((4.S - 1.S) - leadingzeros.asSInt) + 127.S
+  frac := ((data << (leadingzeros.asUInt + 1.U))) >> (32.U - 23.U);
+
+  io.out := io.in(31) ## exp.asUInt ## frac(22,0)
+}
+
 class AdderSubber(bw: Int) extends Module {
   require(bw == 16 || bw == 32 || bw == 64 || bw == 128)
   val io = IO(new Bundle() {
@@ -401,6 +463,9 @@ class CORDIC_ROM(bw: Int) extends Module {
     atantable(61) := scala.BigInt("4476578029606273024", 10).U(64.W) //0.000000
     atantable(62) := scala.BigInt("4472074429978902528", 10).U(64.W) //0.000000
     atantable(63) := scala.BigInt("4614256656550997272", 10).U(64.W) //3.141593
+    atantable(64) := scala.BigInt("4605249457297304856", 10).U(64.W) //0.785398
+    atantable(65) := scala.BigInt("4602023952714414927", 10).U(64.W) //0.463648
+
   }
   else if (32 == bw) {
     atantable(0) := 1061752795.U //0.785398
@@ -467,5 +532,13 @@ object Main extends App {
   val pw = new PrintWriter("testcordic.v")
   pw.println(getVerilogString(new CORDIC(32)))
   pw.close()
+  val pw2 = new PrintWriter("fixed.v")
+  pw2.println(getVerilogString(new FloatToFixed32()))
+  pw2.println(getVerilogString(new FixedToFloat32()))
+  pw2.close()
+
+  val pw3 = new PrintWriter("clz.v")
+  pw3.println(getVerilogString(new CLZ32()))
+  pw3.close()
 
 }
