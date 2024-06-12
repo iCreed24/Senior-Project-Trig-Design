@@ -49,90 +49,26 @@ class FixedToFloat32 extends Module {
     val out : UInt = Output(UInt(32.W))
   })
 
-  val sign  = Wire(UInt(1.W))
+  val sign  = Wire(SInt(1.W))
   val exp = Wire(SInt(8.W))
-  val frac = Wire(UInt(64.W))
+  val frac = Wire(SInt(23.W))
 
   val data = Wire(UInt(32.W))
   data := Mux(io.in(31) === 1.U, (~io.in).asUInt + 1.U, io.in)
-  sign := io.in(31)
+  sign := io.in(31).asSInt
 
   val clz32 = Module(new CLZ32())
-  clz32.io.in := data
-  val leadingzeros = clz32.io.out
+  clz32.io.in := data.asUInt
+  val leadingzeros = Wire(UInt(19.W))
+  leadingzeros := 0x0L.U(14.W) ## clz32.io.out(4,0)
 
   exp := ((4.S - 1.S) - leadingzeros.asSInt) + 127.S
-  frac := ((data << (leadingzeros.asUInt + 1.U))) >> (32.U - 23.U);
+  frac := (((data.asSInt << (leadingzeros + 1.U).asUInt)).asSInt >> (32.U - 23.U));
 
   io.out := io.in(31) ## exp.asUInt ## frac(22,0)
 }
 
-class AdderSubber(bw: Int) extends Module {
-  require(bw == 16 || bw == 32 || bw == 64 || bw == 128)
-  val io = IO(new Bundle() {
-    val in_a: UInt = Input(UInt(bw.W))
-    val in_b: UInt = Input(UInt(bw.W))
-    val in_sel: UInt = Input(UInt(1.W)) // 0 for add, 1 for subtract
-    val out_s: UInt = Output(UInt(bw.W))
-  })
 
-  /* in_sel is 1 for subtraction, 0 for addition */
-  private val adder: FP_adder = Module(new FP_adder(bw))
-
-  adder.io.in_a := io.in_a
-  adder.io.in_b := Mux(io.in_sel === 0.U, io.in_b(bw - 1), ~io.in_b(bw - 1) ) ## io.in_b(bw - 2, 0)
-
-  io.out_s := adder.io.out_s
-}
-
-class FloatHalver(bw: Int) extends Module {
-  val io = IO(new Bundle() {
-    val in: UInt = Input(UInt(bw.W))
-    val amt: UInt = Input(UInt(log2Up(bw).W))
-    val out: UInt = Output(UInt(bw.W))
-  })
-
-  private def GetExponentFieldWidth(bitwidth: Int): Int = {
-    bitwidth match {
-      case 16 => 5
-      case 32 => 8
-      case 64 => 11
-      case 128 => 15
-    }
-  }
-
-  private val subber = Module(new full_subber(GetExponentFieldWidth(bw)))
-  subber.io.in_c := 0.U //0 carry in
-  subber.io.in_a := io.in(bw - 2, bw - (1 + GetExponentFieldWidth(bw)))
-  subber.io.in_b := io.amt
-  io.out := Mux(io.in === 0.U, 0.U, io.in(bw - 1) ## subber.io.out_s ## io.in(bw - (2 + GetExponentFieldWidth(bw)), 0))
-}
-
-class CORDIC_Controller(bw: Int) extends Module {
-  require(bw == 16 || bw == 32 || bw == 64 || bw == 128)
-  val io = IO(new Bundle() {
-    val out_output_rdy: UInt = Output(UInt(1.W))
-    val out_pipe_rdy: UInt = Output(UInt(1.W))
-    val out_feedback_rdy: UInt = Output(UInt(1.W))
-    val out_pipeline_count : UInt = Output(UInt(bw.W))
-  })
-
-  private val iteration_count = RegInit(0.U(bw.W))
-  val pipeline_count : UInt = RegInit(0.U(bw.W))
-  io.out_pipeline_count := pipeline_count
-  // Need an iteration per bit of precision. When this resets to 0, the output should be ready
-
-  io.out_feedback_rdy := Mux(pipeline_count === 2.U, 1.U, 0.U);
-  /* The output ready signal manually adjusted to account for precision loss relative to
-  the version of the algorithm using fixed point arithmetic -- we reach our maximum precision sooner because
-  some of the bits in the floating point format are wasted on functions with a restricted and well-known domain/codomain */
-
-  io.out_output_rdy := Mux(iteration_count === bw.U - 2.U && io.out_pipe_rdy === 1.U, 1.U, 0.U) // When output is ready, there have been bw iterations
-  io.out_pipe_rdy := Mux(pipeline_count === 3.U, 1.U, 0.U) // When pipe_rdy is high, an iteration is complete
-
-  pipeline_count := Mux(pipeline_count === 3.U, 1.U, pipeline_count + 1.U)
-  iteration_count := Mux(pipeline_count === 3.U, Mux(iteration_count === bw.U + 1.U, 0.U, iteration_count + 1.U), iteration_count)
-}
 
 class CORDIC(bw: Int) extends Module {
 /* Am told we only care about single precision */
@@ -187,9 +123,10 @@ val io = IO(new Bundle() {
   val tofixedx0 = Module(new FloatToFixed32())
   val tofixedy0 = Module(new FloatToFixed32())
   val tofixedz0 = Module(new FloatToFixed32())
+
   tofixedx0.io.in := io.in_x0
   tofixedy0.io.in := io.in_y0
-  tofixedz0.io.in := io.in_z0
+  tofixedz0.io.in := io.in_z0 // Disable for cos
 
   val x = RegInit(VecInit(Seq.fill(bw)(0.S(bw.W))))
   val y = RegInit(VecInit(Seq.fill(bw)(0.S(bw.W))))
@@ -199,7 +136,7 @@ val io = IO(new Bundle() {
   /* Floating point inputs converted to fixed point */
   val fixedx0 = tofixedx0.io.out
   val fixedy0 = tofixedy0.io.out
-  val fixedz0 = tofixedz0.io.out
+  val fixedz0 = tofixedz0.io.out // change this directly to input for cos
 
 
   theta(0) := 0.S
@@ -223,6 +160,14 @@ val io = IO(new Bundle() {
   val tofloatyout = Module(new FixedToFloat32())
   val tofloatzout = Module(new FixedToFloat32())
 
+  /*
+  //Output fixed point
+  io.out_x := x(31).asUInt
+  io.out_y := y(31).asUInt
+  io.out_z := theta(31).asUInt
+  */
+
+  //Translate back to floating point
   tofloatxout.io.in := x(31).asUInt
   tofloatyout.io.in := y(31).asUInt
   tofloatzout.io.in := z0s(31).asUInt
@@ -233,59 +178,67 @@ val io = IO(new Bundle() {
 
 }
 
-class CORDIC_ROM(bw: Int) extends Module {
-  require(bw == 32)
-val io = IO(new Bundle() {
-  val k = Output(UInt(bw.W))
-  val invk = Output(UInt(bw.W))
-  val atanout = Output(UInt(bw.W))
-  val atanselect = Input(UInt(log2Up(bw).W + 1))
-})
+class Cos(bw: Int) extends Module
+{
+  val io = IO(new Bundle() {
+    val in = Input(UInt(bw.W))
+    val out = Output(UInt(bw.W))
+    }
+  )
+  val PI_DIV_TWO = 0x1921fb60L.S
+  val TWO_PI = 0x6487ed80L.S
+  val PI = 0x3243f6c0L.S
+  val THREE_PI_DIV_TWO = 0x4b65f200L.S
 
-private var singleprec_k = UInt(32.W)
-private var invsingleprec_k = 1070778634.U
+  val tofixedz0 = Module(new FloatToFixed32())
+  tofixedz0.io.in := io.in
+
+  /*  PI/2: 0x1921fb60
+      2PI: 0x6487ed80
+      PI: 0x3243f6c0
+      1.5*PI: 0x4b65f200
+  */
+
+  val cordic = Module(new CORDIC(32))
+  cordic.io.in_x0 := 1058764014.U //This is k ~ .607
+  //cordic.io.in_x0 := 0x10000000L.U
+  cordic.io.in_y0 := 0.U
+
+  /* We perform the float to fixed conversion for CORDIC here so we can use integer comparisons for the fixed point
+    quadrant determination
+  */
+
+  //If theta < 0, theta = theta + 2*pi
+
+   val theta = Reg(SInt(bw.W))
+   theta := Mux(tofixedz0.io.out.asSInt < 0.S, tofixedz0.io.out.asSInt + TWO_PI, tofixedz0.io.out.asSInt)
+
+  when(theta > TWO_PI){
+    //Angle should already be fmodded to under 2*pi; this should be unnecessary
+    //cos(theta - 2*pi)
+    cordic.io.in_z0 := (theta - TWO_PI).asUInt
+    io.out := cordic.io.out_x
+  } .elsewhen(theta > THREE_PI_DIV_TWO){
+    //cos(2*pi - theta)
+    cordic.io.in_z0 := (TWO_PI - theta).asUInt
+    io.out := cordic.io.out_x}
+  .elsewhen(theta > PI_DIV_TWO){
+    //-sin(theta - pi/2)
+    cordic.io.in_z0 := (theta - PI_DIV_TWO).asUInt
+    io.out := ~cordic.io.out_y(31) ## cordic.io.out_y(30,0)
+  }
+  .elsewhen(theta > PI){
+    //-cos(theta - pi)
+    cordic.io.in_z0 := (theta - PI).asUInt
+    io.out := ~cordic.io.out_x(31) ## cordic.io.out_x(30,0)
+  }.otherwise{
+    //cos(theta)
+      cordic.io.in_z0 := theta.asUInt
+      io.out := cordic.io.out_x
+    }
 
 
-val atantable = Wire(Vec(bw, UInt(bw.W)))
-
-  io.atanout := atantable(io.atanselect)
-  io.invk := 442048832.U //Q4.28 fixed point 1/k
-  io.k := 163008224.U    //Q4.28 fixed point k
-
-  atantable(0) := 210828720.U //Q4.28 fixed point of 0.785398
-  atantable(1) := 124459456.U //Q4.28 fixed point of 0.463648
-  atantable(2) := 65760960.U //Q4.28 fixed point of 0.244979
-  atantable(3) := 33381290.U //Q4.28 fixed point of 0.124355
-  atantable(4) := 16755422.U //Q4.28 fixed point of 0.062419
-  atantable(5) := 8385879.U //Q4.28 fixed point of 0.031240
-  atantable(6) := 4193962.U //Q4.28 fixed point of 0.015624
-  atantable(7) := 2097109.U //Q4.28 fixed point of 0.007812
-  atantable(8) := 1048570.U //Q4.28 fixed point of 0.003906
-  atantable(9) := 524287.U //Q4.28 fixed point of 0.001953
-  atantable(10) := 262143.U //Q4.28 fixed point of 0.000977
-  atantable(11) := 131071.U //Q4.28 fixed point of 0.000488
-  atantable(12) := 65536.U //Q4.28 fixed point of 0.000244
-  atantable(13) := 32768.U //Q4.28 fixed point of 0.000122
-  atantable(14) := 16384.U //Q4.28 fixed point of 0.000061
-  atantable(15) := 8192.U //Q4.28 fixed point of 0.000031
-  atantable(16) := 4096.U //Q4.28 fixed point of 0.000015
-  atantable(17) := 2048.U //Q4.28 fixed point of 0.000008
-  atantable(18) := 1024.U //Q4.28 fixed point of 0.000004
-  atantable(19) := 512.U //Q4.28 fixed point of 0.000002
-  atantable(20) := 256.U //Q4.28 fixed point of 0.000001
-  atantable(21) := 128.U //Q4.28 fixed point of 0.000000
-  atantable(22) := 64.U //Q4.28 fixed point of 0.000000
-  atantable(23) := 32.U //Q4.28 fixed point of 0.000000
-  atantable(24) := 16.U //Q4.28 fixed point of 0.000000
-  atantable(25) := 8.U //Q4.28 fixed point of 0.000000
-  atantable(26) := 4.U //Q4.28 fixed point of 0.000000
-  atantable(27) := 2.U //Q4.28 fixed point of 0.000000
-  atantable(28) := 1.U //Q4.28 fixed point of 0.000000
-  atantable(29) := 0.U //Q4.28 fixed point of 0.000000
-  atantable(30) := 0.U //Q4.28 fixed point of 0.000000
-  atantable(31) := 843314880.U //Q4.28 fixed point of 3.141593
 }
-
 
 object Main extends App {
 
@@ -300,5 +253,9 @@ pw2.close()
 val pw3 = new PrintWriter("clz.v")
 pw3.println(getVerilogString(new CLZ32()))
 pw3.close()
+
+  val pw4 = new PrintWriter("trig.v")
+  pw4.println(getVerilogString(new Cos(32)))
+  pw4.close()
 
 }
