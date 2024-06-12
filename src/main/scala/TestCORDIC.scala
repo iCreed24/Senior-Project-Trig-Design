@@ -68,8 +68,6 @@ class FixedToFloat32 extends Module {
   io.out := io.in(31) ## exp.asUInt ## frac(22,0)
 }
 
-
-
 class CORDIC(bw: Int) extends Module {
 /* Am told we only care about single precision */
 require(bw == 32)
@@ -77,10 +75,12 @@ val io = IO(new Bundle() {
   val in_x0 : UInt = Input(UInt(bw.W))
   val in_y0 : UInt = Input(UInt(bw.W))
   val in_z0 : UInt = Input(UInt(bw.W))
+  val in_mode : UInt = Input(UInt(bw.W))
 
   val out_x : UInt = Output(UInt(bw.W))
   val out_y : UInt = Output(UInt(bw.W))
   val out_z : UInt = Output(UInt(bw.W))
+  val out_mode : UInt = Output(UInt(2.W))
 })
 
   val atantable = Wire(Vec(bw, UInt(bw.W)))
@@ -122,27 +122,37 @@ val io = IO(new Bundle() {
   * */
   val tofixedx0 = Module(new FloatToFixed32())
   val tofixedy0 = Module(new FloatToFixed32())
-  val tofixedz0 = Module(new FloatToFixed32())
+  //val tofixedz0 = Module(new FloatToFixed32())
 
   tofixedx0.io.in := io.in_x0
   tofixedy0.io.in := io.in_y0
-  tofixedz0.io.in := io.in_z0 // Disable for cos
+  //tofixedz0.io.in := io.in_z0 // Disable for cos
+
 
   val x = RegInit(VecInit(Seq.fill(bw)(0.S(bw.W))))
   val y = RegInit(VecInit(Seq.fill(bw)(0.S(bw.W))))
   var theta = RegInit(VecInit(Seq.fill(bw)(0.S(bw.W))))
   var z0s = RegInit(VecInit(Seq.fill(bw)(0.S(bw.W))))
+  val modes = RegInit(VecInit(Seq.fill(bw)(0.U(2.W))))
+
+/*
+  val x = Wire(Vec(bw, SInt(bw.W)))
+  val y = Wire(Vec(bw, SInt(bw.W)))
+  var theta = Wire(Vec(bw, SInt(bw.W)))
+  var z0s = Wire(Vec(bw, SInt(bw.W)))
+*/
 
   /* Floating point inputs converted to fixed point */
   val fixedx0 = tofixedx0.io.out
   val fixedy0 = tofixedy0.io.out
-  val fixedz0 = tofixedz0.io.out // change this directly to input for cos
-
+  //val fixedz0 = tofixedz0.io.out // change this directly to input for cos
+  val fixedz0 = io.in_z0
 
   theta(0) := 0.S
   x(0) := fixedx0.asSInt
   y(0) := fixedy0.asSInt
   z0s(0) := fixedz0.asSInt
+  modes(0) := io.in_mode
 
   for(n <- 0 to 30){
 
@@ -154,18 +164,12 @@ val io = IO(new Bundle() {
     x(n + 1) := x(n) - (fxyterm >> n.asUInt).asSInt
     y(n + 1) := (fxxterm >> n.asUInt).asSInt + y(n)
     z0s(n + 1) := z0s(n)
+    modes(n + 1) := modes(n)
   }
 
   val tofloatxout = Module(new FixedToFloat32())
   val tofloatyout = Module(new FixedToFloat32())
   val tofloatzout = Module(new FixedToFloat32())
-
-  /*
-  //Output fixed point
-  io.out_x := x(31).asUInt
-  io.out_y := y(31).asUInt
-  io.out_z := theta(31).asUInt
-  */
 
   //Translate back to floating point
   tofloatxout.io.in := x(31).asUInt
@@ -175,6 +179,7 @@ val io = IO(new Bundle() {
   io.out_x := tofloatxout.io.out
   io.out_y := tofloatyout.io.out
   io.out_z := tofloatzout.io.out
+  io.out_mode := modes(31).asUInt
 
 }
 
@@ -193,50 +198,46 @@ class Cos(bw: Int) extends Module
   val tofixedz0 = Module(new FloatToFixed32())
   tofixedz0.io.in := io.in
 
-  /*  PI/2: 0x1921fb60
-      2PI: 0x6487ed80
-      PI: 0x3243f6c0
-      1.5*PI: 0x4b65f200
-  */
 
   val cordic = Module(new CORDIC(32))
   cordic.io.in_x0 := 1058764014.U //This is k ~ .607
-  //cordic.io.in_x0 := 0x10000000L.U
   cordic.io.in_y0 := 0.U
 
-  /* We perform the float to fixed conversion for CORDIC here so we can use integer comparisons for the fixed point
-    quadrant determination
+  /* We perform the float to fixed conversion for CORDIC here so we can use integer comparisons
+    for the fixed point quadrant determination.
+
+    Since:
+    1) The input and output may be separated by dozens of cycles, and
+    2) We decide how to adjust both the input and output from the value of the input angle at the time of input
+
+    We need to encode the type of range reduction into a value we pass through the CORDIC pipeline
+    along with the inputs to it so that when we get the output of the module we remember how to adjust
+    the output.
   */
 
-  //If theta < 0, theta = theta + 2*pi
+  val theta = Mux(tofixedz0.io.out.asSInt < 0.S, tofixedz0.io.out.asSInt + TWO_PI, tofixedz0.io.out.asSInt)
+  val outmode = cordic.io.out_mode
 
-   val theta = Reg(SInt(bw.W))
-   theta := Mux(tofixedz0.io.out.asSInt < 0.S, tofixedz0.io.out.asSInt + TWO_PI, tofixedz0.io.out.asSInt)
+  when(theta > THREE_PI_DIV_TWO){
+    cordic.io.in_mode := 2.U
+  }.elsewhen(theta > PI_DIV_TWO && theta < THREE_PI_DIV_TWO){
+    cordic.io.in_mode := 1.U
+  }.otherwise
+  {
+    cordic.io.in_mode := 0.U
+  }
 
-  when(theta > TWO_PI){
-    //Angle should already be fmodded to under 2*pi; this should be unnecessary
-    //cos(theta - 2*pi)
+  when(outmode === 2.U){
     cordic.io.in_z0 := (theta - TWO_PI).asUInt
     io.out := cordic.io.out_x
-  } .elsewhen(theta > THREE_PI_DIV_TWO){
-    //cos(2*pi - theta)
-    cordic.io.in_z0 := (TWO_PI - theta).asUInt
-    io.out := cordic.io.out_x}
-  .elsewhen(theta > PI_DIV_TWO){
-    //-sin(theta - pi/2)
-    cordic.io.in_z0 := (theta - PI_DIV_TWO).asUInt
-    io.out := ~cordic.io.out_y(31) ## cordic.io.out_y(30,0)
-  }
-  .elsewhen(theta > PI){
-    //-cos(theta - pi)
-    cordic.io.in_z0 := (theta - PI).asUInt
+  }.elsewhen(outmode === 1.U){
+    cordic.io.in_z0 := (PI - theta).asUInt
     io.out := ~cordic.io.out_x(31) ## cordic.io.out_x(30,0)
-  }.otherwise{
-    //cos(theta)
-      cordic.io.in_z0 := theta.asUInt
-      io.out := cordic.io.out_x
-    }
-
+  }.otherwise
+  {
+    cordic.io.in_z0 := theta.asUInt
+    io.out := cordic.io.out_x
+  }
 
 }
 
