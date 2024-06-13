@@ -12,11 +12,8 @@ class Sin(bw: Int) extends Module
   val io = IO(new Bundle() {
     val in = Input(UInt(bw.W))
     val out = Output(UInt(bw.W))
-  }
+    }
   )
-
-  val rangereducer = Module(new TrigRangeReducer(bw))
-  rangereducer.io.in := io.in
 
   val PI_DIV_TWO = 0x1921fb60L.S
   val TWO_PI = 0x6487ed80L.S
@@ -24,7 +21,7 @@ class Sin(bw: Int) extends Module
   val THREE_PI_DIV_TWO = 0x4b65f200L.S
 
   val tofixedz0 = Module(new FloatToFixed32())
-  tofixedz0.io.in := rangereducer.io.out
+  tofixedz0.io.in := io.in
 
 
   val cordic = Module(new CORDIC(32))

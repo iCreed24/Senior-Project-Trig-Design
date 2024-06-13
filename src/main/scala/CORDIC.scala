@@ -68,41 +68,20 @@ class CORDIC(bw: Int) extends Module {
   tofixedx0.io.in := io.in_x0
   tofixedy0.io.in := io.in_y0
 
-
+/*
   val x = Wire(Vec(bw, SInt(bw.W)))
   val y = Wire(Vec(bw, SInt(bw.W)))
-  var theta = Wire(Vec(bw, SInt(bw.W)))
-  var z0s = Wire(Vec(bw, SInt(bw.W)))
-  var modes = Wire(Vec(bw, UInt(2.W)))
-
-  /*
-  val x = RegInit(VecInit(Seq.fill(bw)(0.S(bw.W))))
-  val y = RegInit(VecInit(Seq.fill(bw)(0.S(bw.W))))
-  var theta = RegInit(VecInit(Seq.fill(bw)(0.S(bw.W))))
-  var z0s = RegInit(VecInit(Seq.fill(bw)(0.S(bw.W))))
-  val modes = RegInit(VecInit(Seq.fill(bw)(0.U(2.W))))
+  val theta = Wire(Vec(bw, SInt(bw.W)))
+  val z0s = Wire(Vec(bw, SInt(bw.W)))
+  val modes = Wire(Vec(bw, UInt(2.W)))
 */
-  /*
-  if(singlecycle == true){
-    val x = Wire(Vec(bw, SInt(bw.W)))
-    val y = Wire(Vec(bw, SInt(bw.W)))
-    var theta = Wire(Vec(bw, SInt(bw.W)))
-    var z0s = Wire(Vec(bw, SInt(bw.W)))
-    var modes = Wire(Vec(bw, UInt(2.W)))
-  }
-  else {
-    val x = RegInit(VecInit(Seq.fill(bw)(0.S(bw.W))))
-    val y = RegInit(VecInit(Seq.fill(bw)(0.S(bw.W))))
-    var theta = RegInit(VecInit(Seq.fill(bw)(0.S(bw.W))))
-    var z0s = RegInit(VecInit(Seq.fill(bw)(0.S(bw.W))))
-    val modes = RegInit(VecInit(Seq.fill(bw)(0.U(2.W))))
-  }*/
-  /*
-    val x = Wire(Vec(bw, SInt(bw.W)))
-    val y = Wire(Vec(bw, SInt(bw.W)))
-    var theta = Wire(Vec(bw, SInt(bw.W)))
-    var z0s = Wire(Vec(bw, SInt(bw.W)))
-  */
+
+  val x = RegInit(VecInit(Seq.fill(bw + 1)(0.S(bw.W))))
+  val y = RegInit(VecInit(Seq.fill(bw + 1)(0.S(bw.W))))
+  val theta = RegInit(VecInit(Seq.fill(bw + 1)(0.S(bw.W))))
+  var z0s = RegInit(VecInit(Seq.fill(bw + 1)(0.S(bw.W))))
+  val modes = RegInit(VecInit(Seq.fill(bw + 1)(0.U(2.W))))
+
 
   /* Floating point inputs converted to fixed point */
   val fixedx0 = tofixedx0.io.out
@@ -110,13 +89,14 @@ class CORDIC(bw: Int) extends Module {
   //val fixedz0 = tofixedz0.io.out // change this directly to input for cos
   val fixedz0 = io.in_z0
 
+
   theta(0) := 0.S
   x(0) := fixedx0.asSInt
   y(0) := fixedy0.asSInt
   z0s(0) := fixedz0.asSInt
   modes(0) := io.in_mode
 
-  for(n <- 0 to 30){
+  for(n <- 0 to 31){
 
     var fxxterm = Mux(theta(n) > z0s(n), -x(n), x(n))
     var fxyterm = Mux(theta(n) > z0s(n), -y(n), y(n))
@@ -127,6 +107,7 @@ class CORDIC(bw: Int) extends Module {
     y(n + 1) := (fxxterm >> n.asUInt).asSInt + y(n)
     z0s(n + 1) := z0s(n)
     modes(n + 1) := modes(n)
+
   }
 
   val tofloatxout = Module(new FixedToFloat32())
@@ -134,13 +115,14 @@ class CORDIC(bw: Int) extends Module {
   val tofloatzout = Module(new FixedToFloat32())
 
   //Translate back to floating point
-  tofloatxout.io.in := x(31).asUInt
-  tofloatyout.io.in := y(31).asUInt
-  tofloatzout.io.in := z0s(31).asUInt
+  tofloatxout.io.in := x(32).asUInt
+  tofloatyout.io.in := y(32).asUInt
+  tofloatzout.io.in := z0s(32).asUInt
+  io.out_mode := modes(32).asUInt
 
   io.out_x := tofloatxout.io.out
   io.out_y := tofloatyout.io.out
   io.out_z := tofloatzout.io.out
-  io.out_mode := modes(31).asUInt
+
 
 }

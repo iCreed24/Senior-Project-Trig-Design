@@ -15,8 +15,6 @@ class Cos(bw: Int) extends Module
     val out = Output(UInt(bw.W))
   }
   )
-  val rangereducer = Module(new TrigRangeReducer(bw))
-  rangereducer.io.in := io.in
 
   val PI_DIV_TWO = 0x1921fb60L.S
   val TWO_PI = 0x6487ed80L.S
@@ -24,7 +22,7 @@ class Cos(bw: Int) extends Module
   val THREE_PI_DIV_TWO = 0x4b65f200L.S
 
   val tofixedz0 = Module(new FloatToFixed32())
-  tofixedz0.io.in := rangereducer.io.out
+  tofixedz0.io.in := io.in
 
 
   val cordic = Module(new CORDIC(32))
@@ -46,24 +44,25 @@ class Cos(bw: Int) extends Module
   val theta = Mux(tofixedz0.io.out.asSInt < 0.S, tofixedz0.io.out.asSInt + TWO_PI, tofixedz0.io.out.asSInt)
   val outmode = cordic.io.out_mode
 
-  when(theta > THREE_PI_DIV_TWO){
+  when(theta >= THREE_PI_DIV_TWO){
     cordic.io.in_mode := 2.U
-  }.elsewhen(theta > PI_DIV_TWO && theta < THREE_PI_DIV_TWO){
+    cordic.io.in_z0 := (theta - TWO_PI).asUInt
+  }.elsewhen(theta >= PI_DIV_TWO && theta < THREE_PI_DIV_TWO){
     cordic.io.in_mode := 1.U
+    cordic.io.in_z0 := (PI - theta).asUInt
   }.otherwise
   {
+    cordic.io.in_z0 := theta.asUInt
     cordic.io.in_mode := 0.U
   }
 
   when(outmode === 2.U){
-    cordic.io.in_z0 := (theta - TWO_PI).asUInt
+
     io.out := cordic.io.out_x
   }.elsewhen(outmode === 1.U){
-    cordic.io.in_z0 := (PI - theta).asUInt
     io.out := ~cordic.io.out_x(31) ## cordic.io.out_x(30,0)
   }.otherwise
   {
-    cordic.io.in_z0 := theta.asUInt
     io.out := cordic.io.out_x
   }
 
