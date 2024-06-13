@@ -62,17 +62,26 @@ class CORDIC(bw: Int) extends Module {
   * */
   val tofixedx0 = Module(new FloatToFixed32())
   val tofixedy0 = Module(new FloatToFixed32())
-  //val tofixedz0 = Module(new FloatToFixed32())
+  //x0 and y0 are received as floating point numbers. This is arbitrary, as modules using cordic could do the conversion
+  //We expect z0 as a fixed point from the Cos/Sin modules, since they compare the angles using integer arithmetic
 
   tofixedx0.io.in := io.in_x0
   tofixedy0.io.in := io.in_y0
-  //tofixedz0.io.in := io.in_z0 // Disable for cos
+
+
   val x = Wire(Vec(bw, SInt(bw.W)))
   val y = Wire(Vec(bw, SInt(bw.W)))
   var theta = Wire(Vec(bw, SInt(bw.W)))
   var z0s = Wire(Vec(bw, SInt(bw.W)))
   var modes = Wire(Vec(bw, UInt(2.W)))
 
+  /*
+  val x = RegInit(VecInit(Seq.fill(bw)(0.S(bw.W))))
+  val y = RegInit(VecInit(Seq.fill(bw)(0.S(bw.W))))
+  var theta = RegInit(VecInit(Seq.fill(bw)(0.S(bw.W))))
+  var z0s = RegInit(VecInit(Seq.fill(bw)(0.S(bw.W))))
+  val modes = RegInit(VecInit(Seq.fill(bw)(0.U(2.W))))
+*/
   /*
   if(singlecycle == true){
     val x = Wire(Vec(bw, SInt(bw.W)))

@@ -12,4 +12,5 @@ object Main extends App {
     cstage.emitVerilog(new CORDIC(32), args)
     cstage.emitVerilog(new Sin(32), args)
     cstage.emitVerilog(new Cos(32), args)
+    cstage.emitVerilog(new TrigRangeReducer(32), args)
 }
