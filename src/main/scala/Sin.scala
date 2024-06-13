@@ -47,22 +47,22 @@ class Sin(bw: Int) extends Module
 
   when(theta > THREE_PI_DIV_TWO){
     cordic.io.in_mode := 2.U
+    cordic.io.in_z0 := (theta - TWO_PI).asUInt
   }.elsewhen(theta > PI_DIV_TWO && theta < THREE_PI_DIV_TWO){
     cordic.io.in_mode := 1.U
+    cordic.io.in_z0 := (PI - theta).asUInt
   }.otherwise
   {
+    cordic.io.in_z0 := theta.asUInt
     cordic.io.in_mode := 0.U
   }
 
   when(outmode === 2.U){
-    cordic.io.in_z0 := (theta - TWO_PI).asUInt
     io.out := cordic.io.out_x
   }.elsewhen(outmode === 1.U){
-    cordic.io.in_z0 := (PI - theta).asUInt
     io.out := ~cordic.io.out_x(31) ## cordic.io.out_x(30,0)
   }.otherwise
   {
-    cordic.io.in_z0 := theta.asUInt
     io.out := cordic.io.out_x
   }
 

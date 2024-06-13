@@ -57,7 +57,6 @@ class Cos(bw: Int) extends Module
   }
 
   when(outmode === 2.U){
-
     io.out := cordic.io.out_x
   }.elsewhen(outmode === 1.U){
     io.out := ~cordic.io.out_x(31) ## cordic.io.out_x(30,0)
