@@ -8,7 +8,7 @@ import FP_Modules.FloatingPointDesigns._
 import chisel3.stage.ChiselStage
 
 object Main extends App {
-    val pw = new PrintWriter("cos.v")
-    pw.println(getVerilogString(new Cos(32)))
+    val pw = new PrintWriter("sin.v")
+    pw.println(getVerilogString(new Sin(32)))
       pw.close()
 }

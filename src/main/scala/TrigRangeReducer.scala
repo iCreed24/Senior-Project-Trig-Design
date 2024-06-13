@@ -1,4 +1,5 @@
 package Trig
+
 import chisel3._
 
 import java.io.PrintWriter
@@ -18,10 +19,11 @@ class TrigRangeReducer(bw: Int) extends Module {
   }
   )
   val TWO_PI = 0x40c90fdbL.U // 2*pi as a single precision float
-  val divider = Module(new FP_divider(32))
+  val divider = Module(new FP_divider_newfpu(32, 2))
   val extractor = Module(new FP_extract(32))
-  val mul = Module(new FP_multiplier(32))
+  val mul = Module(new FP_multiplier_10ccs(32))
 
+  divider.io.in_en := 1.U
   divider.io.in_a := io.in
   divider.io.in_b := TWO_PI
 
@@ -29,6 +31,7 @@ class TrigRangeReducer(bw: Int) extends Module {
   extractor.io.out_frac //fractional part
   extractor.io.out //integer part
 
+  mul.io.in_en := 1.U
   mul.io.in_a := extractor.io.out_frac
   mul.io.in_b := TWO_PI
   io.out := mul.io.out_s
