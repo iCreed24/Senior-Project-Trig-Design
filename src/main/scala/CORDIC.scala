@@ -69,25 +69,18 @@ class CORDIC(bw: Int) extends Module {
   tofixedx0.io.in := io.in_x0
   tofixedy0.io.in := io.in_y0
 
+  val rounds = 28
+  val x = Wire(Vec(rounds + 1, SInt(bw.W)))
+  val y = Wire(Vec(rounds + 1, SInt(bw.W)))
+  val theta = Wire(Vec(rounds + 1, SInt(bw.W)))
+  val z0s = Wire(Vec(rounds + 1, SInt(bw.W)))
+  val modes = Wire(Vec(rounds + 1, UInt(2.W)))
 
-  val x = Wire(Vec(bw + 1, SInt(bw.W)))
-  val y = Wire(Vec(bw + 1, SInt(bw.W)))
-  val theta = Wire(Vec(bw + 1, SInt(bw.W)))
-  val z0s = Wire(Vec(bw + 1, SInt(bw.W)))
-  val modes = Wire(Vec(bw + 1, UInt(2.W)))
-
-  val xr = RegInit(VecInit(Seq.fill(bw + 1)(0.S(bw.W))))
-  val yr = RegInit(VecInit(Seq.fill(bw + 1)(0.S(bw.W))))
-  val thetar = RegInit(VecInit(Seq.fill(bw + 1)(0.S(bw.W))))
-  var z0sr = RegInit(VecInit(Seq.fill(bw + 1)(0.S(bw.W))))
-  val modesr = RegInit(VecInit(Seq.fill(bw + 1)(0.U(2.W))))
-  /*
-    val x = RegInit(VecInit(Seq.fill(bw + 1)(0.S(bw.W))))
-    val y = RegInit(VecInit(Seq.fill(bw + 1)(0.S(bw.W))))
-    val theta = RegInit(VecInit(Seq.fill(bw + 1)(0.S(bw.W))))
-    var z0s = RegInit(VecInit(Seq.fill(bw + 1)(0.S(bw.W))))
-    val modes = RegInit(VecInit(Seq.fill(bw + 1)(0.U(2.W))))
-  */
+  val xr = RegInit(VecInit(Seq.fill(rounds + 1)(0.S(bw.W))))
+  val yr = RegInit(VecInit(Seq.fill(rounds + 1)(0.S(bw.W))))
+  val thetar = RegInit(VecInit(Seq.fill(rounds + 1)(0.S(bw.W))))
+  var z0sr = RegInit(VecInit(Seq.fill(rounds + 1)(0.S(bw.W))))
+  val modesr = RegInit(VecInit(Seq.fill(rounds + 1)(0.U(2.W))))
 
   /* Floating point inputs converted to fixed point */
   val fixedx0 = tofixedx0.io.out
@@ -104,7 +97,7 @@ class CORDIC(bw: Int) extends Module {
 
 
   var iter = 0
-  for (n <- 0 to 30 by 4) {
+  for (n <- 0 to rounds - 2 by 4) {
 
 
     for (i <- 1 to 4) {
@@ -148,10 +141,10 @@ class CORDIC(bw: Int) extends Module {
   val tofloatzout = Module(new FixedToFloat32())
 
   //Translate back to floating point
-  tofloatxout.io.in := xr(7).asUInt
-  tofloatyout.io.in := yr(7).asUInt
-  tofloatzout.io.in := z0sr(7).asUInt
-  io.out_mode := modesr(7).asUInt
+  tofloatxout.io.in := xr(iter).asUInt
+  tofloatyout.io.in := yr(iter).asUInt
+  tofloatzout.io.in := z0sr(iter).asUInt
+  io.out_mode := modesr(iter).asUInt
 
   io.out_x := tofloatxout.io.out
   io.out_y := tofloatyout.io.out
