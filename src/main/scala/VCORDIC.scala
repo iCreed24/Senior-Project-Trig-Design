@@ -26,12 +26,10 @@ class VCORDIC(bw: Int) extends Module {
     val in_x0: UInt = Input(UInt(bw.W))
     val in_y0: UInt = Input(UInt(bw.W))
     val in_z0: UInt = Input(UInt(bw.W))
-    val in_mode: UInt = Input(UInt(bw.W))
 
     val out_x: UInt = Output(UInt(bw.W))
     val out_y: UInt = Output(UInt(bw.W))
     val out_z: UInt = Output(UInt(bw.W))
-    val out_mode: UInt = Output(UInt(2.W))
   })
 
   val atantable = Wire(Vec(bw, UInt(64.W)))
@@ -69,23 +67,26 @@ class VCORDIC(bw: Int) extends Module {
   atantable(31) := scala.BigInt("00000003243f6c00", 16).U(64.W) //Q32.32 fixed point of 3.141593
 
 
-
   /* x0 should be pre-scaled by being set to k; this obviates the scaling multiplication
     otherwise necessary after the algorithm is complete
   * */
   val tofixedx0 = Module(new Float32ToFixed64())
   val tofixedy0 = Module(new Float32ToFixed64())
-  val tofixedz0 = Module (new Float32ToFixed64())
+  val tofixedz0 = Module(new Float32ToFixed64())
 
   tofixedx0.io.in := io.in_x0
   tofixedy0.io.in := io.in_y0
   tofixedz0.io.in := io.in_z0
 
-  val rounds = 30
-  val x = Wire(Vec(rounds + 2, SInt(64.W)))
-  val y = Wire(Vec(rounds + 2, SInt(64.W)))
-  val z = Wire(Vec(rounds + 2, SInt(64.W)))
-  val modes = Wire(Vec(rounds + 2, UInt(2.W)))
+  val rounds = 28
+
+  val x = Wire(Vec(rounds + 1, SInt(64.W)))
+  val y = Wire(Vec(rounds + 1, SInt(64.W)))
+  val z = Wire(Vec(rounds + 1, SInt(64.W)))
+
+  val xr = RegInit(VecInit(Seq.fill(rounds + 1)(0.S(64.W))))
+  val yr = RegInit(VecInit(Seq.fill(rounds + 1)(0.S(64.W))))
+  val zr = RegInit(VecInit(Seq.fill(rounds + 1)(0.S(64.W))))
 
   /* Floating point inputs converted to fixed point */
   val fixedx0 = tofixedx0.io.out
@@ -96,20 +97,38 @@ class VCORDIC(bw: Int) extends Module {
   x(0) := fixedx0.asSInt
   y(0) := fixedy0.asSInt
 
-  modes(0) := io.in_mode
+  var iter = 0
+  for (n <- 0 to rounds - 2 by 4) {
+    for (i <- 1 to 4) {
+      var prevn = n + i - 1
+      if (i == 1 && n > 0) {
+        val cond = yr(iter) < 0.S(64.W)
 
+        val xterm = Mux(cond, -xr(iter), xr(iter))
+        val yterm = Mux(cond, -yr(iter), yr(iter))
+        val zterm = Mux(cond, -atantable(prevn), atantable(prevn))
 
-  for (n <- 0 to rounds) {
+        x(n + i) := xr(iter) + (yterm >> prevn.asUInt).asSInt
+        y(n + i) := yr(iter) - (xterm >> prevn.asUInt).asSInt
+        z(n + i) := zr(iter) + zterm.asSInt
+      }
+      else {
+        val cond = y(prevn) < 0.S(64.W)
+        val xterm = Mux(cond, -x(prevn), x(prevn))
+        val yterm = Mux(cond, -y(prevn), y(prevn))
+        val zterm = Mux(cond, -atantable(prevn), atantable(prevn))
 
-    val cond = y(n) < 0.S(64.W)
-    val xterm = Mux(cond, -x(n), x(n))
-    val yterm = Mux(cond, -y(n), y(n))
-    val zterm = Mux(cond, -atantable(n), atantable(n))
+        x(n + i) := x(prevn) + (yterm >> prevn.asUInt).asSInt
+        y(n + i) := y(prevn) - (xterm >> prevn.asUInt).asSInt
+        z(n + i) := z(prevn) + zterm.asSInt
+      }
+    }
 
-    x(n + 1) := x(n) + (yterm >> n.asUInt).asSInt
-    y(n + 1) := y(n) - (xterm >> n.asUInt).asSInt
-    z(n + 1) := z(n) + zterm.asSInt
-    modes(n + 1) := modes(n)
+    xr(iter + 1) := x(n + 4)
+    yr(iter + 1) := y(n + 4)
+    zr(iter + 1) := z(n + 4)
+
+    iter = iter + 1
   }
 
   val tofloatxout = Module(new Fixed64ToFloat32())
@@ -117,10 +136,9 @@ class VCORDIC(bw: Int) extends Module {
   val tofloatzout = Module(new Fixed64ToFloat32())
 
   //Translate back to floating point
-  tofloatxout.io.in := x(31).asUInt
-  tofloatyout.io.in := y(31).asUInt
-  tofloatzout.io.in := z(31).asUInt
-  io.out_mode := modes(31).asUInt
+  tofloatxout.io.in := xr(iter).asUInt
+  tofloatyout.io.in := yr(iter).asUInt
+  tofloatzout.io.in := zr(iter).asUInt
 
   io.out_x := tofloatxout.io.out
   io.out_y := tofloatyout.io.out

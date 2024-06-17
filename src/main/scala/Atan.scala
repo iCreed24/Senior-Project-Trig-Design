@@ -21,7 +21,6 @@ class Atan (bw : Int) extends Module {
   vcordic.io.in_x0 := 0x3f800000L.U //This is 1.0f
   vcordic.io.in_y0 := io.in
   vcordic.io.in_z0 := 0.U
-  vcordic.io.in_mode := 0.U
 
   io.out := vcordic.io.out_z
 
