@@ -11,14 +11,14 @@ import chisel3.stage.ChiselStage
 
 class VCORDIC(bw: Int) extends Module {
   /*
-  Vector CORDIC for arctangent function:
-  This takes and produces single precision values. However,
-  internally, 64 bit Q32.32 fixed point is used for all arithmetic.
+  Vector CORDIC for atan function:
+  This takes and produces single precision values. However, internally, 64 bit Q32.32 fixed point
+  is used for all arithmetic.
 
-  We want about 6 digits of precision after the decimal point. atan(x) -> Pi/2 as x->inf,
-  and after about 1E7, x increasing does not affect the first 6 places after the decimal point.
-  Similarly, atan(x) = 0 when x = 0, and changes that make x smaller than 1E-7 do not affect the digits of the
-  output we are interested in.
+  We want about 6 digits of precision after the decimal point. The limit of atan(x) = Pi/2 as x->inf,
+  and after about x=1E7, x increasing does not affect the first 6 places after the decimal point.
+  Similarly, atan(x) = 0 when x = 0, and changes that make x smaller than 1E-7 do not affect the digits
+  we are interested in.
 
   */
   require(bw == 32)
@@ -66,10 +66,6 @@ class VCORDIC(bw: Int) extends Module {
   atantable(30) := scala.BigInt("0000000000000004", 16).U(64.W) //Q32.32 fixed point of 0.000000
   atantable(31) := scala.BigInt("00000003243f6c00", 16).U(64.W) //Q32.32 fixed point of 3.141593
 
-
-  /* x0 should be pre-scaled by being set to k; this obviates the scaling multiplication
-    otherwise necessary after the algorithm is complete
-  * */
   val tofixedx0 = Module(new Float32ToFixed64())
   val tofixedy0 = Module(new Float32ToFixed64())
   val tofixedz0 = Module(new Float32ToFixed64())
