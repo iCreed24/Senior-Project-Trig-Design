@@ -74,7 +74,7 @@ class VCORDIC(bw: Int) extends Module {
   tofixedy0.io.in := io.in_y0
   tofixedz0.io.in := io.in_z0
 
-  val rounds = 24
+  val rounds = 28
 
   private val x = Wire(Vec(rounds + 1, SInt(64.W)))
   private val y = Wire(Vec(rounds + 1, SInt(64.W)))
