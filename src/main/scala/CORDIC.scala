@@ -97,7 +97,7 @@ class CORDIC(bw: Int) extends Module {
 
 
   var iter = 0
-  for (n <- 0 to rounds - 2 by 4) {
+  for (n <- 0 to rounds - 1 by 4) {
 
 
     for (i <- 1 to 4) {
