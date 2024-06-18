@@ -6,7 +6,7 @@ import java.io.PrintWriter
 import chisel3.util._
 import Binary_Modules.BinaryDesigns._
 import FP_Modules.FloatingPointDesigns._
-import chisel3.stage.ChiselStage
+import chisel3.stage.{ChiselGeneratorAnnotation, ChiselStage}
 
 
 class VCORDIC(bw: Int) extends Module {
@@ -32,7 +32,7 @@ class VCORDIC(bw: Int) extends Module {
     val out_z: UInt = Output(UInt(bw.W))
   })
 
-  val atantable = Wire(Vec(bw, UInt(64.W)))
+  private val atantable = Wire(Vec(bw, UInt(64.W)))
   atantable(0) := scala.BigInt("00000000c90fdb00", 16).U(64.W) //Q32.32 fixed point of 0.785398
   atantable(1) := scala.BigInt("0000000076b19c00", 16).U(64.W) //Q32.32 fixed point of 0.463648
   atantable(2) := scala.BigInt("000000003eb6ec00", 16).U(64.W) //Q32.32 fixed point of 0.244979
@@ -66,9 +66,9 @@ class VCORDIC(bw: Int) extends Module {
   atantable(30) := scala.BigInt("0000000000000004", 16).U(64.W) //Q32.32 fixed point of 0.000000
   atantable(31) := scala.BigInt("00000003243f6c00", 16).U(64.W) //Q32.32 fixed point of 3.141593
 
-  val tofixedx0 = Module(new Float32ToFixed64())
-  val tofixedy0 = Module(new Float32ToFixed64())
-  val tofixedz0 = Module(new Float32ToFixed64())
+  private val tofixedx0 = Module(new Float32ToFixed64())
+  private val tofixedy0 = Module(new Float32ToFixed64())
+  private val tofixedz0 = Module(new Float32ToFixed64())
 
   tofixedx0.io.in := io.in_x0
   tofixedy0.io.in := io.in_y0
@@ -76,18 +76,18 @@ class VCORDIC(bw: Int) extends Module {
 
   val rounds = 28
 
-  val x = Wire(Vec(rounds + 1, SInt(64.W)))
-  val y = Wire(Vec(rounds + 1, SInt(64.W)))
-  val z = Wire(Vec(rounds + 1, SInt(64.W)))
+  private val x = Wire(Vec(rounds + 1, SInt(64.W)))
+  private val y = Wire(Vec(rounds + 1, SInt(64.W)))
+  private val z = Wire(Vec(rounds + 1, SInt(64.W)))
 
-  val xr = RegInit(VecInit(Seq.fill(rounds + 1)(0.S(64.W))))
-  val yr = RegInit(VecInit(Seq.fill(rounds + 1)(0.S(64.W))))
-  val zr = RegInit(VecInit(Seq.fill(rounds + 1)(0.S(64.W))))
+  private val xr = RegInit(VecInit(Seq.fill(rounds + 1)(0.S(64.W))))
+  private val yr = RegInit(VecInit(Seq.fill(rounds + 1)(0.S(64.W))))
+  private val zr = RegInit(VecInit(Seq.fill(rounds + 1)(0.S(64.W))))
 
   /* Floating point inputs converted to fixed point */
-  val fixedx0 = tofixedx0.io.out
-  val fixedy0 = tofixedy0.io.out
-  val fixedz0 = tofixedz0.io.out
+  private val fixedx0 = tofixedx0.io.out
+  private val fixedy0 = tofixedy0.io.out
+  private val fixedz0 = tofixedz0.io.out
 
   z(0) := fixedz0.asSInt
   x(0) := fixedx0.asSInt
@@ -127,9 +127,9 @@ class VCORDIC(bw: Int) extends Module {
     iter = iter + 1
   }
 
-  val tofloatxout = Module(new Fixed64ToFloat32())
-  val tofloatyout = Module(new Fixed64ToFloat32())
-  val tofloatzout = Module(new Fixed64ToFloat32())
+  private val tofloatxout = Module(new Fixed64ToFloat32())
+  private val tofloatyout = Module(new Fixed64ToFloat32())
+  private val tofloatzout = Module(new Fixed64ToFloat32())
 
   //Translate back to floating point
   tofloatxout.io.in := xr(iter).asUInt
@@ -143,7 +143,11 @@ class VCORDIC(bw: Int) extends Module {
 }
 
 object VCORDICMain extends App {
-  val pw = new PrintWriter("vcordic.v")
-  pw.println(getVerilogString(new VCORDIC(32)))
-  pw.close()
+  (new ChiselStage).execute(
+    Array(
+      "-X", "verilog",
+      "-e", "verilog",
+      "--target-dir", "GeneratedVerilog/Trig/VCORDIC"),
+    Seq(ChiselGeneratorAnnotation(() => new VCORDIC(32)))
+  )
 }

@@ -6,7 +6,7 @@ import java.io.PrintWriter
 import chisel3.util._
 import Binary_Modules.BinaryDesigns._
 import FP_Modules.FloatingPointDesigns._
-import chisel3.stage.ChiselStage
+import chisel3.stage.{ChiselGeneratorAnnotation, ChiselStage}
 
 
 class CORDIC(bw: Int) extends Module {
@@ -151,4 +151,14 @@ class CORDIC(bw: Int) extends Module {
   io.out_z := tofloatzout.io.out
 
 
+}
+
+object CORDICMain extends App {
+  (new ChiselStage).execute(
+    Array(
+      "-X", "verilog",
+      "-e", "verilog",
+      "--target-dir", "GeneratedVerilog/Trig/CORDIC"),
+    Seq(ChiselGeneratorAnnotation(() => new CORDIC(32)))
+  )
 }

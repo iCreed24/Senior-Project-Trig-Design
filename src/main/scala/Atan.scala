@@ -6,7 +6,7 @@ import java.io.PrintWriter
 import chisel3.util._
 import Binary_Modules.BinaryDesigns._
 import FP_Modules.FloatingPointDesigns._
-import chisel3.stage.ChiselStage
+import chisel3.stage.{ChiselGeneratorAnnotation, ChiselStage}
 
 class Atan (bw : Int) extends Module {
   require (bw == 32)
@@ -17,13 +17,15 @@ class Atan (bw : Int) extends Module {
   )
 
   /* If 6 digits of precision are good enough, z = atan(y) is PI/2 to 6 decimal places by y=1E7,
-  and it is also 0 to 6 decimal places by y=1E-7. Straying outside that range will not change the
-   result inside of 6 decimal places. */
-  val y_upper_bound = 0x4b189680L.S(32.W)
-  val y_lower_bound = 0x322bcc77L.S(32.W)
-  val inputsign = io.in(31)
-  val inputmag = 0.U ## io.in(30,0)
-  val vcordic = Module(new VCORDIC(32))
+  and it is also 0 to 6 decimal places by y=1E-7. Going farther outside that range will not change the
+   result inside of 6 decimal places; this is important because 1E7 to 1E-7 is representable by a Q32.32
+    fixed point number, and fixed point operations are much faster and less complex than floating point ones.
+    */
+  private val y_upper_bound = 0x4b189680L.S(32.W)
+  private val y_lower_bound = 0x322bcc77L.S(32.W)
+  private val inputsign = io.in(31)
+  private val inputmag = 0.U ## io.in(30,0)
+  private val vcordic = Module(new VCORDIC(32))
   vcordic.io.in_x0 := 0x3f800000L.U //This is 1.0f
 
   vcordic.io.in_y0 := Mux(inputmag.asSInt > y_upper_bound, (inputsign ## y_upper_bound(30, 0)).asUInt,
@@ -36,7 +38,11 @@ class Atan (bw : Int) extends Module {
 }
 
 object AtanMain extends App {
-  val pw = new PrintWriter("atan.v")
-  pw.println(getVerilogString(new Atan(32)))
-  pw.close()
+  (new ChiselStage).execute(
+    Array(
+      "-X", "verilog",
+      "-e", "verilog",
+      "--target-dir", "GeneratedVerilog/Trig/Atan"),
+    Seq(ChiselGeneratorAnnotation(() => new Atan(32)))
+  )
 }

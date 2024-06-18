@@ -6,47 +6,37 @@ import java.io.PrintWriter
 import chisel3.util._
 import Binary_Modules.BinaryDesigns._
 import FP_Modules.FloatingPointDesigns._
-import chisel3.stage.ChiselStage
+import chisel3.stage.{ChiselGeneratorAnnotation, ChiselStage}
 
 
 class Cos(bw: Int) extends Module {
-  require (bw == 32)
+  require(bw == 32)
   val io = IO(new Bundle() {
     val in = Input(UInt(bw.W))
     val out = Output(UInt(bw.W))
-  }
-  )
+  })
 
-  val reducer = Module(new TrigRangeReducer(32))
+  /* Range reduction necessary to reduce angles to within (0, 2*PI). This is very slow, and if angles of interest
+ are known to already be inside (0, 2*PI) this step should be removed. */
+  private val reducer = Module(new TrigRangeReducer(32))
 
-  val PI_DIV_TWO = 0x1921fb60L.S
-  val TWO_PI = 0x6487ed80L.S
-  val PI = 0x3243f6c0L.S
-  val THREE_PI_DIV_TWO = 0x4b65f200L.S
+  /* These values demarcate the four angle quadrants and are in Q4.28 fixed point */
+  private val PI_DIV_TWO = 0x1921fb60L.S
+  private val TWO_PI = 0x6487ed80L.S
+  private val PI = 0x3243f6c0L.S
+  private val THREE_PI_DIV_TWO = 0x4b65f200L.S
 
-  val tofixedz0 = Module(new FloatToFixed32())
+  private val tofixedz0 = Module(new FloatToFixed32())
   reducer.io.in := io.in
   tofixedz0.io.in := reducer.io.out
 
 
-  val cordic = Module(new CORDIC(32))
-  cordic.io.in_x0 := 1058764014.U //This is k ~ .607
+  private val cordic = Module(new CORDIC(32))
+  cordic.io.in_x0 := 1058764014.U //This is k ~ .607 as a single precision IEEE 754 float
   cordic.io.in_y0 := 0.U
 
-  /* We perform the float to fixed conversion for CORDIC here so we can use integer comparisons
-    for the fixed point quadrant determination.
-
-    Since:
-    1) The input and output may be separated by dozens of cycles, and
-    2) We decide how to adjust both the input and output from the value of the input angle at the time of input
-
-    We need to encode the type of range reduction into a value we pass through the CORDIC pipeline
-    along with the inputs to it so that when we get the output of the module we remember how to adjust
-    the output.
-  */
-
-  val theta = Mux(tofixedz0.io.out.asSInt < 0.S, tofixedz0.io.out.asSInt + TWO_PI, tofixedz0.io.out.asSInt)
-  val outmode = cordic.io.out_mode
+  private val theta = Mux(tofixedz0.io.out.asSInt < 0.S, tofixedz0.io.out.asSInt + TWO_PI, tofixedz0.io.out.asSInt)
+  private val outmode = cordic.io.out_mode
 
   when(theta >= THREE_PI_DIV_TWO) {
     cordic.io.in_mode := 2.U
@@ -68,3 +58,14 @@ class Cos(bw: Int) extends Module {
   }
 
 }
+
+object CosMain extends App {
+  (new ChiselStage).execute(
+    Array(
+      "-X", "verilog",
+      "-e", "verilog",
+      "--target-dir", "GeneratedVerilog/Trig/SinCos"),
+    Seq(ChiselGeneratorAnnotation(() => new Cos(32)))
+  )
+}
+
