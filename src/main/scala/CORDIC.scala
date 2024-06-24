@@ -8,10 +8,10 @@ import Binary_Modules.BinaryDesigns._
 import FP_Modules.FloatingPointDesigns._
 import chisel3.stage.{ChiselGeneratorAnnotation, ChiselStage}
 
-
-class CORDIC(bw: Int) extends Module {
+/* Module will run 4 iterations per rounds_param, so 8 rounds_param runs 32 iterations */
+class CORDIC(bw: Int = 32, rounds_param: Int = 8) extends Module {
   /* Am told we only care about single precision */
-  require(bw == 32)
+  require(bw == 32 && rounds_param <= 8 && rounds_param >= 1)
   val io = IO(new Bundle() {
     val in_x0: UInt = Input(UInt(bw.W))
     val in_y0: UInt = Input(UInt(bw.W))
@@ -69,7 +69,7 @@ class CORDIC(bw: Int) extends Module {
   tofixedx0.io.in := io.in_x0
   tofixedy0.io.in := io.in_y0
 
-  val rounds = 28
+  val rounds = (rounds_param * 4) - 4//28
   val x = Wire(Vec(rounds + 1, SInt(bw.W)))
   val y = Wire(Vec(rounds + 1, SInt(bw.W)))
   val theta = Wire(Vec(rounds + 1, SInt(bw.W)))

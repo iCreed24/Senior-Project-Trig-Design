@@ -8,8 +8,9 @@ import Binary_Modules.BinaryDesigns._
 import FP_Modules.FloatingPointDesigns._
 import chisel3.stage.{ChiselGeneratorAnnotation, ChiselStage}
 
-
-class VCORDIC(bw: Int) extends Module {
+/* Module will run 4 iterations per rounds_param, so 8 rounds_param runs 32 iterations */
+class VCORDIC(bw: Int = 32, rounds_param : Int = 8) extends Module {
+  require(bw == 32 && rounds_param <= 8 && rounds_param >= 1)
   /*
   Vector CORDIC for atan function:
   This takes and produces single precision values. However, internally, 64 bit Q32.32 fixed point
@@ -74,7 +75,7 @@ class VCORDIC(bw: Int) extends Module {
   tofixedy0.io.in := io.in_y0
   tofixedz0.io.in := io.in_z0
 
-  val rounds = 28
+  val rounds = (rounds_param * 4) - 4//28
 
   private val x = Wire(Vec(rounds + 1, SInt(64.W)))
   private val y = Wire(Vec(rounds + 1, SInt(64.W)))

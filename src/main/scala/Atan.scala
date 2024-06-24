@@ -8,8 +8,8 @@ import Binary_Modules.BinaryDesigns._
 import FP_Modules.FloatingPointDesigns._
 import chisel3.stage.{ChiselGeneratorAnnotation, ChiselStage}
 
-class Atan (bw : Int) extends Module {
-  require (bw == 32)
+class Atan (bw : Int = 32, rounds_param : Int = 8) extends Module {
+  require(bw == 32 && rounds_param <= 8 && rounds_param >= 1)
   val io = IO(new Bundle() {
     val in = Input(UInt(bw.W))
     val out = Output(UInt(bw.W))
@@ -25,7 +25,7 @@ class Atan (bw : Int) extends Module {
   private val y_lower_bound = 0x322bcc77L.S(32.W)
   private val inputsign = io.in(31)
   private val inputmag = 0.U ## io.in(30,0)
-  private val vcordic = Module(new VCORDIC(32))
+  private val vcordic = Module(new VCORDIC(bw, rounds_param))
   vcordic.io.in_x0 := 0x3f800000L.U //This is 1.0f
 
   vcordic.io.in_y0 := Mux(inputmag.asSInt > y_upper_bound, (inputsign ## y_upper_bound(30, 0)).asUInt,

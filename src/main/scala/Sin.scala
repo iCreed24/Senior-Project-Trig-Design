@@ -9,8 +9,8 @@ import FP_Modules.FloatingPointDesigns._
 import chisel3.stage.{ChiselGeneratorAnnotation, ChiselStage}
 
 
-class Sin(bw: Int) extends Module {
-  require(bw == 32)
+class Sin(bw: Int = 32, rounds_param : Int = 8) extends Module {
+  require(bw == 32 && rounds_param <= 8 && rounds_param >= 1)
   val io = IO(new Bundle() {
     val in = Input(UInt(bw.W))
     val out = Output(UInt(bw.W))
@@ -31,7 +31,7 @@ class Sin(bw: Int) extends Module {
   tofixedz0.io.in := reducer.io.out
 
 
-  private val cordic = Module(new CORDIC(32))
+  private val cordic = Module(new CORDIC(bw, rounds_param))
   cordic.io.in_x0 := 1058764014.U //This is k ~ .607 as a single precision IEEE 754 float
   cordic.io.in_y0 := 0.U
 
