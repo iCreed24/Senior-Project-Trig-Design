@@ -9,8 +9,8 @@ import FP_Modules.FloatingPointDesigns._
 import chisel3.stage.{ChiselGeneratorAnnotation, ChiselStage}
 
 
-class Cos(bw: Int = 32, rounds_param : Int = 8) extends Module {
-  require(bw == 32 && rounds_param <= 8 && rounds_param >= 1)
+class Cos(bw: Int = 32, rounds_param : Int = 16) extends Module {
+  require(bw == 32 && rounds_param <= 16 && rounds_param >= 1)
   val io = IO(new Bundle() {
     val in = Input(UInt(bw.W))
     val out = Output(UInt(bw.W))

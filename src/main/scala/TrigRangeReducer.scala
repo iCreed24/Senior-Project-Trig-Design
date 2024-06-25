@@ -27,7 +27,12 @@ class TrigRangeReducer(bw: Int) extends Module {
   divider.io.in_a := io.in
   divider.io.in_b := TWO_PI
 
-  extractor.io.in_a := divider.io.out_s
+  val reg1 = Reg(UInt(bw.W))
+
+  reg1 := divider.io.out_s
+
+  extractor.io.in_a := reg1
+  //extractor.io.in_a := divider.io.out_s
   extractor.io.out_frac //fractional part
   extractor.io.out //integer part
 

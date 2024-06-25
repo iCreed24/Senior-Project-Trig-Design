@@ -9,9 +9,9 @@ import FP_Modules.FloatingPointDesigns._
 import chisel3.stage.{ChiselGeneratorAnnotation, ChiselStage}
 
 /* Module will run 4 iterations per rounds_param, so 8 rounds_param runs 32 iterations */
-class CORDIC(bw: Int = 32, rounds_param: Int = 8) extends Module {
+class CORDIC(bw: Int = 32, rounds_param: Int = 16) extends Module {
   /* Am told we only care about single precision */
-  require(bw == 32 && rounds_param <= 8 && rounds_param >= 1)
+  require(bw == 32 && rounds_param <= 16 && rounds_param >= 1)
   val io = IO(new Bundle() {
     val in_x0: UInt = Input(UInt(bw.W))
     val in_y0: UInt = Input(UInt(bw.W))
@@ -68,8 +68,8 @@ class CORDIC(bw: Int = 32, rounds_param: Int = 8) extends Module {
 
   tofixedx0.io.in := io.in_x0
   tofixedy0.io.in := io.in_y0
-
-  val rounds = (rounds_param * 4) - 4//28
+  val iterperround = 2
+  val rounds = (rounds_param * iterperround) - iterperround  //28
   val x = Wire(Vec(rounds + 1, SInt(bw.W)))
   val y = Wire(Vec(rounds + 1, SInt(bw.W)))
   val theta = Wire(Vec(rounds + 1, SInt(bw.W)))
@@ -89,19 +89,26 @@ class CORDIC(bw: Int = 32, rounds_param: Int = 8) extends Module {
   val fixedz0 = io.in_z0
 
 
+
   theta(0) := 0.S
   x(0) := fixedx0.asSInt
   y(0) := fixedy0.asSInt
   z0s(0) := fixedz0.asSInt
   modes(0) := io.in_mode
 
+  thetar(0) := 0.S
+  xr(0) := fixedx0.asSInt
+  yr(0) := fixedy0.asSInt
+  z0sr(0) := fixedz0.asSInt
+  modesr(0) := io.in_mode
+
 
   var iter = 0
-  for (n <- 0 to rounds - 1 by 4) {
+  for (n <- 0 to rounds - 1 by iterperround) {
 
 
-    for (i <- 1 to 4) {
-      if (i == 1 && n > 0) {
+    for (i <- 1 to iterperround) {
+      if (i == 1) {
           var prevn = n + i - 1
           var fxxterm = Mux(thetar(iter) > z0sr(iter), -xr(iter), xr(iter))
           var fxyterm = Mux(thetar(iter) > z0sr(iter), -yr(iter), yr(iter))
@@ -127,11 +134,11 @@ class CORDIC(bw: Int = 32, rounds_param: Int = 8) extends Module {
       }
     }
 
-    thetar(iter + 1) := theta(n + 4)
-    xr(iter + 1) := x(n + 4)
-    yr(iter + 1) := y(n + 4)
-    z0sr(iter + 1) := z0s(n + 4)
-    modesr(iter + 1) := modes(n + 4)
+    thetar(iter + 1) := theta(n + iterperround)
+    xr(iter + 1) := x(n + iterperround)
+    yr(iter + 1) := y(n + iterperround)
+    z0sr(iter + 1) := z0s(n + iterperround)
+    modesr(iter + 1) := modes(n + iterperround)
 
     iter = iter + 1
   }
