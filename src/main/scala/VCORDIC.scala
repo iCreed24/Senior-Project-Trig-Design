@@ -9,8 +9,8 @@ import FP_Modules.FloatingPointDesigns._
 import chisel3.stage.{ChiselGeneratorAnnotation, ChiselStage}
 
 /* Module will run 4 iterations per rounds_param, so 8 rounds_param runs 32 iterations */
-class VCORDIC(bw: Int = 32, rounds_param : Int = 8) extends Module {
-  require(bw == 32 && rounds_param <= 8 && rounds_param >= 1)
+class VCORDIC(bw: Int = 32, rounds_param : Int = 16) extends Module {
+  require(bw == 32 && rounds_param <= 16 && rounds_param >= 1)
   /*
   Vector CORDIC for atan function:
   This takes and produces single precision values. However, internally, 64 bit Q32.32 fixed point
@@ -75,7 +75,8 @@ class VCORDIC(bw: Int = 32, rounds_param : Int = 8) extends Module {
   tofixedy0.io.in := io.in_y0
   tofixedz0.io.in := io.in_z0
 
-  val rounds = (rounds_param * 4) - 4//28
+  val itersperround = 2
+  val rounds = (rounds_param * itersperround) - itersperround
 
   private val x = Wire(Vec(rounds + 1, SInt(64.W)))
   private val y = Wire(Vec(rounds + 1, SInt(64.W)))
@@ -94,11 +95,16 @@ class VCORDIC(bw: Int = 32, rounds_param : Int = 8) extends Module {
   x(0) := fixedx0.asSInt
   y(0) := fixedy0.asSInt
 
+  zr(0) := fixedz0.asSInt
+  xr(0) := fixedx0.asSInt
+  yr(0) := fixedy0.asSInt
+
+
   var iter = 0
-  for (n <- 0 to rounds - 1 by 4) {
-    for (i <- 1 to 4) {
+  for (n <- 0 to rounds - 1 by itersperround) {
+    for (i <- 1 to itersperround) {
       var prevn = n + i - 1
-      if (i == 1 && n > 0) {
+      if (i == 1) {
         val cond = yr(iter) < 0.S(64.W)
 
         val xterm = Mux(cond, -xr(iter), xr(iter))
@@ -121,9 +127,9 @@ class VCORDIC(bw: Int = 32, rounds_param : Int = 8) extends Module {
       }
     }
 
-    xr(iter + 1) := x(n + 4)
-    yr(iter + 1) := y(n + 4)
-    zr(iter + 1) := z(n + 4)
+    xr(iter + 1) := x(n + itersperround)
+    yr(iter + 1) := y(n + itersperround)
+    zr(iter + 1) := z(n + itersperround)
 
     iter = iter + 1
   }
