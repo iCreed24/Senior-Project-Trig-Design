@@ -5,7 +5,8 @@ import chisel3._
 import java.io.PrintWriter
 import chisel3.util._
 import Binary_Modules.BinaryDesigns._
-import FP_Modules.FloatingPointDesigns._
+import FP_Modules.FloatingPointDesigns.FP_extract
+import ChiselMathLibsMario2.FloatingPointDesigns2._
 import chisel3.stage.ChiselStage
 
 class TrigRangeReducer(bw: Int) extends Module {
@@ -19,10 +20,11 @@ class TrigRangeReducer(bw: Int) extends Module {
   }
   )
   val TWO_PI = 0x40c90fdbL.U // 2*pi as a single precision float
-  val divider = Module(new FP_divider_newfpu(32, 1))
+  val divider = Module(new FP_div_bwccs(32))
   val extractor = Module(new FP_extract(32))
   val mul = Module(new FP_multiplier_10ccs(32))
 
+  divider.io.in_valid := 1.U
   divider.io.in_en := 1.U
   divider.io.in_a := io.in
   divider.io.in_b := TWO_PI

@@ -6,6 +6,7 @@ import java.io.PrintWriter
 import chisel3.util._
 import Binary_Modules.BinaryDesigns._
 import FP_Modules.FloatingPointDesigns._
+
 import chisel3.stage.{ChiselGeneratorAnnotation, ChiselStage}
 
 
