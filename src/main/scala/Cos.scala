@@ -65,8 +65,8 @@ object CosMain extends App {
     Array(
       "-X", "verilog",
       "-e", "verilog",
-      "--target-dir", "GeneratedVerilog/Trig/SinCos"),
-    Seq(ChiselGeneratorAnnotation(() => new Cos(32)))
+      "--target-dir", "verification/dut/Cos"),
+    Seq(ChiselGeneratorAnnotation(() => new Cos(32, rounds_param = 16)))
   )
 }
 

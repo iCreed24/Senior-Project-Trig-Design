@@ -70,7 +70,7 @@ object SinMain extends App {
     Array(
       "-X", "verilog",
       "-e", "verilog",
-      "--target-dir", "GeneratedVerilog/Trig/SinCos"),
+      "--target-dir", "verification/dut"),
     Seq(ChiselGeneratorAnnotation(() => new Sin(32)))
   )
 }

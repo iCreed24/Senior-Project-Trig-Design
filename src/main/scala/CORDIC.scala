@@ -25,8 +25,8 @@ class CORDIC(bw: Int = 32, rounds_param: Int = 16) extends Module {
   })
 
   val atantable = Wire(Vec(bw, UInt(bw.W)))
-  atantable(0) := 210828720.U //Q4.28 fixed point of 0.785398
-  atantable(1) := 124459456.U //Q4.28 fixed point of 0.463648
+  atantable(0) := 210828720.U //Q4.28 fixed point of 0.785398, arctan(1)
+  atantable(1) := 124459456.U //Q4.28 fixed point of 0.463648, arctan(0.5)
   atantable(2) := 65760960.U //Q4.28 fixed point of 0.244979
   atantable(3) := 33381290.U //Q4.28 fixed point of 0.124355
   atantable(4) := 16755422.U //Q4.28 fixed point of 0.062419
@@ -56,7 +56,7 @@ class CORDIC(bw: Int = 32, rounds_param: Int = 16) extends Module {
   atantable(28) := 1.U //Q4.28 fixed point of 0.000000
   atantable(29) := 0.U //Q4.28 fixed point of 0.000000
   atantable(30) := 0.U //Q4.28 fixed point of 0.000000
-  atantable(31) := 843314880.U //Q4.28 fixed point of 3.141593
+  atantable(31) := 843314880.U //Q4.28 fixed point of 4.141593
 
   /* x0 should be pre-scaled by being set to k; this obviates the scaling multiplication
     otherwise necessary after the algorithm is complete
@@ -105,8 +105,6 @@ class CORDIC(bw: Int = 32, rounds_param: Int = 16) extends Module {
 
   var iter = 0
   for (n <- 0 to rounds - 1 by iterperround) {
-
-
     for (i <- 1 to iterperround) {
       if (i == 1) {
           var prevn = n + i - 1

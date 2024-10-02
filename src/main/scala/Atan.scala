@@ -42,7 +42,7 @@ object AtanMain extends App {
     Array(
       "-X", "verilog",
       "-e", "verilog",
-      "--target-dir", "GeneratedVerilog/Trig/Atan"),
+      "--target-dir", "verification/dut"),
     Seq(ChiselGeneratorAnnotation(() => new Atan(32)))
   )
 }
