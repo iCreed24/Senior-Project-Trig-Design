@@ -11,7 +11,7 @@ import chisel3.stage.{ChiselGeneratorAnnotation, ChiselStage}
 
 
 class Cos(bw: Int = 32, rounds_param : Int = 16) extends Module {
-  require(bw == 32 && rounds_param <= 16 && rounds_param >= 1)
+  require(bw == 32 && rounds_param <= 32 && rounds_param >= 1)
   val io = IO(new Bundle() {
     val in = Input(UInt(bw.W))
     val out = Output(UInt(bw.W))
@@ -66,7 +66,8 @@ object CosMain extends App {
       "-X", "verilog",
       "-e", "verilog",
       "--target-dir", "verification/dut/Cos"),
-    Seq(ChiselGeneratorAnnotation(() => new Cos(32, rounds_param = 16)))
+    Seq(ChiselGeneratorAnnotation(() => new Cos(32, rounds_param = 32)))
   )
 }
+
 

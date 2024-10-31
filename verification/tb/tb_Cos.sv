@@ -34,7 +34,7 @@ reg         reset;
 reg  [31:0] io_in;
 wire [31:0] io_out;
 
- always #10 clock = ~clock;
+ always #5 clock = ~clock;
 
 Cos u_Cos(
   .clock (clock ),
@@ -83,10 +83,12 @@ initial begin
       end
 
     if(error_percent<=ERROR_TOLERANCE) begin
-      $display("At %dns, the test case Pass! error_percent: %f, cos output: %h", $time, error_percent, output_cos[j]);
-      $display("At %dns, the test case Pass! error_percent: %f, cos output: %f", $time, error_percent, golden_real);
+      //$display("At %dns, the test case PASS! error_percent: %f, cos output: %h, expected: %h", $time, error_percent, io_out, output_cos[j]);
+      $display("At %dns, the test case PASS! error_percent: %f, cos output: %f, expected: %f", $time, error_percent, dut_out_real, golden_real);
+      //$display("At %dns, the test case Pass! error_percent: %f, cos output: %h", $time, error_percent, output_cos[j]);
+      //$display("At %dns, the test case Pass! error_percent: %f, cos output: %f", $time, error_percent, golden_real);
     end else begin
-      $display("At %dns, the test case FAIL! error_percent: %f, cos output: %h, expected: %h", $time, error_percent, io_out, output_cos[j]);
+      //$display("At %dns, the test case FAIL! error_percent: %f, cos output: %h, expected: %h", $time, error_percent, io_out, output_cos[j]);
       $display("At %dns, the test case FAIL! error_percent: %f, cos output: %f, expected: %f", $time, error_percent, dut_out_real, golden_real);
     end
     @(negedge clock);
