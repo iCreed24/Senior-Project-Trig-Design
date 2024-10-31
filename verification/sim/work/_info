@@ -10,59 +10,61 @@ z2
 cModel Technology
 Z0 dC:/Mirror/GitProject/Trig-Design-with-Chisel-HCL/verification/sim
 vCLZ32
-Z1 !s110 1730313230
+Z1 !s110 1730402020
 !i10b 1
 !s100 Z[>9n[l<18I7cYPMdkE2?2
-I<jZIf_Ll81NO7dz7V6]GH1
+I;Zif=;@<N@ba9?HCkeJBK1
 R0
-Z2 w1727886243
-8../dut/Cos/CLZ32.v
-F../dut/Cos/CLZ32.v
-!i122 27
+Z2 w1730397318
+8../dut/cos_n32_pd4_bw32/CLZ32.v
+F../dut/cos_n32_pd4_bw32/CLZ32.v
+!i122 36
 L0 1 24
 Z3 VDg1SIo80bB@j0V0VzS_@n1
 Z4 OV;L;2021.1;73
 r1
 !s85 0
 31
-Z5 !s108 1730313230.000000
-!s107 ../tb/tb_Cos.sv|../tb/tb_func.sv|../dut/Cos/twoscomplement.v|../dut/Cos/TrigRangeReducer.v|../dut/Cos/multiplier.v|../dut/Cos/leadingOneDetector.v|../dut/Cos/full_subtractor.v|../dut/Cos/full_adder.v|../dut/Cos/FP_multiplier_bw32.v|../dut/Cos/FP_extract.v|../dut/Cos/FP_divider_bw32.v|../dut/Cos/FloatToFixed32.v|../dut/Cos/FixedToFloat32.v|../dut/Cos/divider_BW48_v3.v|../dut/Cos/CORDIC.v|../dut/Cos/CLZ32.v|../dut/Cos/Cos.v|
-Z6 !s90 -reportprogress|300|-f|../filelist/filelist_Cos.f|
+Z5 !s108 1730402020.000000
+!s107 ../tb/tb_Cos.sv|../tb/tb_func.sv|../dut/cos_n32_pd4_bw32/twoscomplement.v|../dut/cos_n32_pd4_bw32/TrigRangeReducer.v|../dut/cos_n32_pd4_bw32/multiplier.v|../dut/cos_n32_pd4_bw32/leadingOneDetector.v|../dut/cos_n32_pd4_bw32/full_subtractor.v|../dut/cos_n32_pd4_bw32/full_adder.v|../dut/cos_n32_pd4_bw32/FP_multiplier_bw32.v|../dut/cos_n32_pd4_bw32/FP_extract.v|../dut/cos_n32_pd4_bw32/FP_divider_bw32.v|../dut/cos_n32_pd4_bw32/FloatToFixed32.v|../dut/cos_n32_pd4_bw32/FixedToFloat32.v|../dut/cos_n32_pd4_bw32/divider_BW48_v3.v|../dut/cos_n32_pd4_bw32/CORDIC.v|../dut/cos_n32_pd4_bw32/CLZ32.v|../dut/cos_n32_pd4_bw32/Cos.v|
+Z6 !s90 -reportprogress|300|+define+COS_N32_PD4_BW32|-f|../filelist/filelist_cos_n32_pd4_bw32.f|
 !i113 1
-Z7 tCvgOpt 0
+Z7 !s92 +define+COS_N32_PD4_BW32
+Z8 tCvgOpt 0
 n@c@l@z32
 vCORDIC
 R1
 !i10b 1
-!s100 1]VDKO7=DGd7`kjS>0=zn3
-IKOT7SS;KkDPDe?GOOX0cW0
+!s100 S3a7HaFcGzO3IHzalMD:S2
+ImFD`PgmGRWGARz_ANeNIg0
 R0
 R2
-8../dut/Cos/CORDIC.v
-F../dut/Cos/CORDIC.v
-!i122 27
-L0 1 1206
+8../dut/cos_n32_pd4_bw32/CORDIC.v
+F../dut/cos_n32_pd4_bw32/CORDIC.v
+!i122 36
+L0 1 582
 R3
 R4
 r1
 !s85 0
 31
 R5
-Z8 !s107 ../tb/tb_Cos.sv|../tb/tb_func.sv|../dut/Cos/twoscomplement.v|../dut/Cos/TrigRangeReducer.v|../dut/Cos/multiplier.v|../dut/Cos/leadingOneDetector.v|../dut/Cos/full_subtractor.v|../dut/Cos/full_adder.v|../dut/Cos/FP_multiplier_bw32.v|../dut/Cos/FP_extract.v|../dut/Cos/FP_divider_bw32.v|../dut/Cos/FloatToFixed32.v|../dut/Cos/FixedToFloat32.v|../dut/Cos/divider_BW48_v3.v|../dut/Cos/CORDIC.v|../dut/Cos/CLZ32.v|../dut/Cos/Cos.v|
+Z9 !s107 ../tb/tb_Cos.sv|../tb/tb_func.sv|../dut/cos_n32_pd4_bw32/twoscomplement.v|../dut/cos_n32_pd4_bw32/TrigRangeReducer.v|../dut/cos_n32_pd4_bw32/multiplier.v|../dut/cos_n32_pd4_bw32/leadingOneDetector.v|../dut/cos_n32_pd4_bw32/full_subtractor.v|../dut/cos_n32_pd4_bw32/full_adder.v|../dut/cos_n32_pd4_bw32/FP_multiplier_bw32.v|../dut/cos_n32_pd4_bw32/FP_extract.v|../dut/cos_n32_pd4_bw32/FP_divider_bw32.v|../dut/cos_n32_pd4_bw32/FloatToFixed32.v|../dut/cos_n32_pd4_bw32/FixedToFloat32.v|../dut/cos_n32_pd4_bw32/divider_BW48_v3.v|../dut/cos_n32_pd4_bw32/CORDIC.v|../dut/cos_n32_pd4_bw32/CLZ32.v|../dut/cos_n32_pd4_bw32/Cos.v|
 R6
 !i113 1
 R7
+R8
 n@c@o@r@d@i@c
 vCos
 R1
 !i10b 1
 !s100 Ld5NO7SU>C7D<46?:_n4Q0
-I97GgckRUoVUni[?2Re;U>3
+IE<_d[PlLcT??0GFN6bDcm2
 R0
-w1727886962
-8../dut/Cos/Cos.v
-F../dut/Cos/Cos.v
-!i122 27
+R2
+8../dut/cos_n32_pd4_bw32/Cos.v
+F../dut/cos_n32_pd4_bw32/Cos.v
+!i122 36
 L0 1 59
 R3
 R4
@@ -70,21 +72,22 @@ r1
 !s85 0
 31
 R5
-R8
+R9
 R6
 !i113 1
 R7
+R8
 n@cos
 vdivider_BW48_v3
 R1
 !i10b 1
 !s100 mU1KIzl:4nY7g<]CNgTZe2
-IBQm^?^;G7ZIj>l1<g@`822
+I7PSi8PTDERmfNQ5Ae`A:c3
 R0
 R2
-8../dut/Cos/divider_BW48_v3.v
-F../dut/Cos/divider_BW48_v3.v
-!i122 27
+8../dut/cos_n32_pd4_bw32/divider_BW48_v3.v
+F../dut/cos_n32_pd4_bw32/divider_BW48_v3.v
+!i122 36
 L0 1 3687
 R3
 R4
@@ -92,21 +95,22 @@ r1
 !s85 0
 31
 R5
-R8
+R9
 R6
 !i113 1
 R7
+R8
 ndivider_@b@w48_v3
 vFixedToFloat32
 R1
 !i10b 1
 !s100 XT2JDiI3BD@B0Ve[^[5O=2
-I?I^fK>TGShNX2lBJMB@MG0
+IZGXcod4[ggT4zzT7ZDFR;1
 R0
 R2
-8../dut/Cos/FixedToFloat32.v
-F../dut/Cos/FixedToFloat32.v
-!i122 27
+8../dut/cos_n32_pd4_bw32/FixedToFloat32.v
+F../dut/cos_n32_pd4_bw32/FixedToFloat32.v
+!i122 36
 L0 1 31
 R3
 R4
@@ -114,21 +118,22 @@ r1
 !s85 0
 31
 R5
-R8
+R9
 R6
 !i113 1
 R7
+R8
 n@fixed@to@float32
 vFloatToFixed32
 R1
 !i10b 1
 !s100 gHl5fdYE[ke6]PARiCfLO1
-IhT?E?0NVHDciI:gXlH60C3
+IOWl:PDoZ`33oKGcmfjnLz2
 R0
 R2
-8../dut/Cos/FloatToFixed32.v
-F../dut/Cos/FloatToFixed32.v
-!i122 27
+8../dut/cos_n32_pd4_bw32/FloatToFixed32.v
+F../dut/cos_n32_pd4_bw32/FloatToFixed32.v
+!i122 36
 L0 1 21
 R3
 R4
@@ -136,21 +141,22 @@ r1
 !s85 0
 31
 R5
-R8
+R9
 R6
 !i113 1
 R7
+R8
 n@float@to@fixed32
 vFP_divider_bw32
 R1
 !i10b 1
 !s100 Md9zBFhCWb3fSYCMog7aQ3
-I6VAgK8ldik@5K@>z:Y@Q^0
+I=NYPGaam75@iKZI^?1GDW0
 R0
 R2
-8../dut/Cos/FP_divider_bw32.v
-F../dut/Cos/FP_divider_bw32.v
-!i122 27
+8../dut/cos_n32_pd4_bw32/FP_divider_bw32.v
+F../dut/cos_n32_pd4_bw32/FP_divider_bw32.v
+!i122 36
 L0 1 454
 R3
 R4
@@ -158,21 +164,22 @@ r1
 !s85 0
 31
 R5
-R8
+R9
 R6
 !i113 1
 R7
+R8
 n@f@p_divider_bw32
 vFP_extract
 R1
 !i10b 1
 !s100 ib3mlZS[GTeS2:`d@DgE72
-I9zd=dMZ@caLQg`jOI?j[f1
+I3hHn]0=K;DTD;=_1kNFX]3
 R0
 R2
-8../dut/Cos/FP_extract.v
-F../dut/Cos/FP_extract.v
-!i122 27
+8../dut/cos_n32_pd4_bw32/FP_extract.v
+F../dut/cos_n32_pd4_bw32/FP_extract.v
+!i122 36
 L0 1 35
 R3
 R4
@@ -180,21 +187,22 @@ r1
 !s85 0
 31
 R5
-R8
+R9
 R6
 !i113 1
 R7
+R8
 n@f@p_extract
 vFP_multiplier_bw32
 R1
 !i10b 1
 !s100 ]lE^:Taa06TWMd2dKPNm82
-IHojYAW<9`lLid`iW@z03a0
+I0Ya8JbnPX6lU>9KQYgg>P1
 R0
 R2
-8../dut/Cos/FP_multiplier_bw32.v
-F../dut/Cos/FP_multiplier_bw32.v
-!i122 27
+8../dut/cos_n32_pd4_bw32/FP_multiplier_bw32.v
+F../dut/cos_n32_pd4_bw32/FP_multiplier_bw32.v
+!i122 36
 L0 1 579
 R3
 R4
@@ -202,177 +210,44 @@ r1
 !s85 0
 31
 R5
-R8
+R9
 R6
 !i113 1
 R7
+R8
 n@f@p_multiplier_bw32
 vfull_adder
 R1
 !i10b 1
 !s100 QCdfn1Nb;d5FD^n@W1gRX3
-I<5?KOa:5aIBoOQeG]P?>>2
+IX4kcR=9=PPK@eN1_[kiX@3
 R0
 R2
-8../dut/Cos/full_adder.v
-F../dut/Cos/full_adder.v
-!i122 27
-Z9 L0 1 12
+8../dut/cos_n32_pd4_bw32/full_adder.v
+F../dut/cos_n32_pd4_bw32/full_adder.v
+!i122 36
+Z10 L0 1 12
 R3
 R4
 r1
 !s85 0
 31
 R5
-R8
+R9
 R6
 !i113 1
 R7
+R8
 vfull_subtractor
 R1
 !i10b 1
 !s100 hRl6=WkQ<V]gRNNYPOd`82
-IbFFNNMO6<lVL]EI@kGIO[3
+IbG>86le]nR]BR7?6XYzz43
 R0
 R2
-8../dut/Cos/full_subtractor.v
-F../dut/Cos/full_subtractor.v
-!i122 27
-R9
-R3
-R4
-r1
-!s85 0
-31
-R5
-R8
-R6
-!i113 1
-R7
-vleadingOneDetector
-R1
-!i10b 1
-!s100 WPII=J]eR8[c1j]LlD6j<1
-I3L23D6XI6_[BC=bn52<aa1
-R0
-R2
-8../dut/Cos/leadingOneDetector.v
-F../dut/Cos/leadingOneDetector.v
-!i122 27
-L0 1 27
-R3
-R4
-r1
-!s85 0
-31
-R5
-R8
-R6
-!i113 1
-R7
-nleading@one@detector
-vmultiplier
-R1
-!i10b 1
-!s100 0o1K03zeF9;AYh`0Sk6Uo3
-I1[IK3=c^Wd^>Y3JJ?M^gC0
-R0
-R2
-8../dut/Cos/multiplier.v
-F../dut/Cos/multiplier.v
-!i122 27
-Z10 L0 1 7
-R3
-R4
-r1
-!s85 0
-31
-R5
-R8
-R6
-!i113 1
-R7
-vtb_Cos
-Z11 DXx6 sv_std 3 std 0 22 VYECXdT12H8WgbUP_5Y6:3
-R1
-!i10b 1
-!s100 lGf>cOoBTnTAIOB2Jz1GN1
-IgnBMQ8M]mGT<LfBC?ZKoB0
-S1
-R0
-w1730301045
-8../tb/tb_Cos.sv
-F../tb/tb_Cos.sv
-Z12 F../tb/tb_func.sv
-!i122 27
-L0 17 178
-R3
-R4
-r1
-!s85 0
-31
-R5
-R8
-R6
-!i113 1
-R7
-ntb_@cos
-Xtb_func_sv_unit
-R11
-R1
-V85_:6kP0?0iYT:XKWS[NE2
-r1
-!s85 0
-!i10b 1
-!s100 FcX=?Y5mCGJK5d;XKemTC1
-I85_:6kP0?0iYT:XKWS[NE2
-!i103 1
-S1
-R0
-w1727890706
-8../tb/tb_func.sv
-R12
-!i122 27
-L0 17 0
-R4
-31
-R5
-R8
-R6
-!i113 1
-R7
-vTrigRangeReducer
-R1
-!i10b 1
-!s100 hfRIVi0_bGlJVGfK:ICIb0
-InB5CLPbnLX?IIJ1<kizco1
-R0
-R2
-8../dut/Cos/TrigRangeReducer.v
-F../dut/Cos/TrigRangeReducer.v
-!i122 27
-L0 1 93
-R3
-R4
-r1
-!s85 0
-31
-R5
-R8
-R6
-!i113 1
-R7
-n@trig@range@reducer
-vtwoscomplement
-R1
-!i10b 1
-!s100 VAD2<Ek<V[_o3o4`Kb2eT2
-IY055mZ5k;ClKac2Q>Ji^20
-R0
-R2
-8../dut/Cos/twoscomplement.v
-F../dut/Cos/twoscomplement.v
-!i122 27
+8../dut/cos_n32_pd4_bw32/full_subtractor.v
+F../dut/cos_n32_pd4_bw32/full_subtractor.v
+!i122 36
 R10
 R3
 R4
@@ -380,7 +255,149 @@ r1
 !s85 0
 31
 R5
-R8
+R9
 R6
 !i113 1
 R7
+R8
+vleadingOneDetector
+R1
+!i10b 1
+!s100 WPII=J]eR8[c1j]LlD6j<1
+I0376KPzU4CJl^dZ@XGY<g1
+R0
+R2
+8../dut/cos_n32_pd4_bw32/leadingOneDetector.v
+F../dut/cos_n32_pd4_bw32/leadingOneDetector.v
+!i122 36
+L0 1 27
+R3
+R4
+r1
+!s85 0
+31
+R5
+R9
+R6
+!i113 1
+R7
+R8
+nleading@one@detector
+vmultiplier
+R1
+!i10b 1
+!s100 0o1K03zeF9;AYh`0Sk6Uo3
+IRmJJSG9^beZ>FhFbEmV0z1
+R0
+R2
+8../dut/cos_n32_pd4_bw32/multiplier.v
+F../dut/cos_n32_pd4_bw32/multiplier.v
+!i122 36
+Z11 L0 1 7
+R3
+R4
+r1
+!s85 0
+31
+R5
+R9
+R6
+!i113 1
+R7
+R8
+vtb_Cos
+Z12 DXx6 sv_std 3 std 0 22 VYECXdT12H8WgbUP_5Y6:3
+R1
+!i10b 1
+!s100 kaM55Rlc=K9XcElEkd5Wm2
+I1A=PgdF`[kazIg8X_PO[[1
+S1
+R0
+w1730401857
+8../tb/tb_Cos.sv
+F../tb/tb_Cos.sv
+Z13 F../tb/tb_func.sv
+!i122 36
+L0 17 187
+R3
+R4
+r1
+!s85 0
+31
+R5
+R9
+R6
+!i113 1
+R7
+R8
+ntb_@cos
+Xtb_func_sv_unit
+R12
+R1
+Vc^:afheQhnM6QYUSfckV73
+r1
+!s85 0
+!i10b 1
+!s100 FcX=?Y5mCGJK5d;XKemTC1
+Ic^:afheQhnM6QYUSfckV73
+!i103 1
+S1
+R0
+w1727890706
+8../tb/tb_func.sv
+R13
+!i122 36
+L0 17 0
+R4
+31
+R5
+R9
+R6
+!i113 1
+R7
+R8
+vTrigRangeReducer
+R1
+!i10b 1
+!s100 hfRIVi0_bGlJVGfK:ICIb0
+IGZGRAJVcOmLKaF^8z8ZSX0
+R0
+R2
+8../dut/cos_n32_pd4_bw32/TrigRangeReducer.v
+F../dut/cos_n32_pd4_bw32/TrigRangeReducer.v
+!i122 36
+L0 1 93
+R3
+R4
+r1
+!s85 0
+31
+R5
+R9
+R6
+!i113 1
+R7
+R8
+n@trig@range@reducer
+vtwoscomplement
+R1
+!i10b 1
+!s100 VAD2<Ek<V[_o3o4`Kb2eT2
+I5jA98_]a4Ble8C^?A3QFM2
+R0
+R2
+8../dut/cos_n32_pd4_bw32/twoscomplement.v
+F../dut/cos_n32_pd4_bw32/twoscomplement.v
+!i122 36
+R11
+R3
+R4
+r1
+!s85 0
+31
+R5
+R9
+R6
+!i113 1
+R7
+R8

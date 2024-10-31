@@ -16,7 +16,16 @@
 
 module tb_Cos();
 parameter TEST_SIZE = 9;
+`ifdef COS_N32_PD32_BW32
+parameter LATENCY = 67;
+`elsif COS_N32_PD16_BW32
 parameter LATENCY = 51;
+`elsif COS_N32_PD8_BW32
+parameter LATENCY = 43;
+`elsif COS_N32_PD4_BW32
+parameter LATENCY = 39;
+`endif
+
 parameter ERROR_TOLERANCE = 1;
 localparam real PI = 3.141592653589793;
 reg [31:0]  output_cos[TEST_SIZE-1:0]; 
