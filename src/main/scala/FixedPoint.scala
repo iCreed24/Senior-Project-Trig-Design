@@ -50,10 +50,16 @@ class CLZ32 extends Module{
   /* Uses a sequence of masks in a binary search to find the number of leading zeros */
   val x = io.in
   val ax = x
-  val bx = Mux((ax & 0xFFFF0000L.U) === 0.U, ax << 16, ax)
-  val cx = Mux((bx & 0xFF000000L.U) === 0.U, bx << 8, bx)
-  val dx = Mux((cx & 0xF0000000L.U) === 0.U, cx << 4, cx)
-  val ex = Mux((dx & 0xC0000000L.U) === 0.U, dx << 2, dx)
+
+
+
+
+
+
+   val bx = Mux((ax & 0xFFFF0000L.U) === 0.U, ax << 16, ax)
+   val cx = Mux((bx & 0xFF000000L.U) === 0.U, bx << 8, bx)
+   val dx = Mux((cx & 0xF0000000L.U) === 0.U, cx << 4, cx)
+   val ex = Mux((dx & 0xC0000000L.U) === 0.U, dx << 2, dx)
 
   io.out := ((ax & 0xFFFF0000L.U) === 0.U) ## ((bx & 0xFF000000L.U) === 0.U) ## ((cx & 0xF0000000L.U) === 0.U) ##
     ((dx & 0xC0000000L.U) === 0.U) ## ((ex & 0x80000000L.U) === 0.U)
@@ -76,6 +82,10 @@ class CLZ64 extends Module{
   /* Uses a sequence of masks in a binary search to find the number of leading zeros */
   val x = io.in
   val zx = x
+
+
+
+
   val ax = Mux((zx & mask1) === 0.U, zx << 32, zx)
   val bx = Mux((ax & mask2) === 0.U, ax << 16, ax)
   val cx = Mux((bx & mask3) === 0.U, bx << 8, bx)

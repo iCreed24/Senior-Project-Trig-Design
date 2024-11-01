@@ -14,4 +14,4 @@
 ../dut/cos_n32_pd1_bw32/TrigRangeReducer.v
 ../dut/cos_n32_pd1_bw32/twoscomplement.v
 ../tb/tb_func.sv
-../tb/tb_Cos.sv
+../tb/tb_cos.sv

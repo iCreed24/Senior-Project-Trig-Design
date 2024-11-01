@@ -9,10 +9,10 @@ import chisel3.stage.ChiselStage
 
 object Main extends App {
     val pw = new PrintWriter("Cos.v")
-    pw.println(getVerilogString(new Cos()))
+    pw.println(getVerilogString(new Cos(32,16)))
       pw.close()
 
   val pw2 = new PrintWriter("Sin.v")
-  pw2.println(getVerilogString(new Cos()))
+  pw2.println(getVerilogString(new Sin(32,1)))
   pw2.close()
 }

@@ -13,7 +13,7 @@ class TrigRangeReducer(bw: Int) extends Module {
   /* Reduces a single precision floating point angle to between -2*pi and 2*pi.
   This uses a division and multiplication, which is very slow. Consider replacing with
   Double Modular Range Reduction in the future */
-  require(bw == 32)
+  require(bw == 32 || bw ==64)
   val io = IO(new Bundle() {
     val in = Input(UInt(bw.W))
     val out = Output(UInt(bw.W))

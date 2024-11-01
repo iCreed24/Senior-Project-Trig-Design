@@ -1,0 +1,74 @@
+#!/bin/csh -f
+################################################################################
+# simulation top script
+# change modelsim in this file dir and run "do this_file.do"
+# project dir ---+---> hdl source dir
+#                +---> sim script dir
+#
+################################################################################
+
+# check if current dir has modelsim config file
+set has_config  [file exists modelsim.do]
+# config modelsim 
+if {$has_config==1} { do modelsim.do  ; }
+
+echo "+====================================="
+echo "| Creat Lib Work soc                  "
+echo "+====================================="
+vlib work
+vmap work work 
+
+echo "+====================================="
+echo "| Complile RTL Code of soc            "
+echo "+====================================="
+vlog +define+ATAN_N32_PD1_BW32\
+     -f ../filelist/filelist_atan_n32_pd1_bw32.f  
+#vlog -f ../filelist/filelist_13cc.f  
+
+echo "+====================================="
+echo "| Compiler Pass                       "
+echo "| Being to Run Simulation             "
+echo "+====================================="
+vsim work.tb_atan -t 1ns
+
+################## #################### mus  ####################################
+add wave -noupdate -format logic -radix hexadecimal tb_atan/u_Atan/clock
+add wave -noupdate -format logic -radix hexadecimal tb_atan/u_Atan/reset
+add wave -noupdate -format logic -radix hexadecimal tb_atan/u_Atan/io_in
+add wave -noupdate -format logic -radix hexadecimal tb_atan/u_Atan/io_out
+
+add wave -position insertpoint /tb_atan/u_Atan/vcordic_clock
+add wave -position insertpoint /tb_atan/u_Atan/vcordic/clock
+add wave -position insertpoint /tb_atan/u_Atan/vcordic_reset
+add wave -position insertpoint /tb_atan/u_Atan/vcordic/reset
+add wave -position insertpoint /tb_atan/u_Atan/vcordic_io_in_y0
+add wave -position insertpoint /tb_atan/u_Atan/vcordic/io_in_y0
+add wave -position insertpoint /tb_atan/u_Atan/vcordic_io_out_z
+add wave -position insertpoint /tb_atan/u_Atan/vcordic/io_out_z
+
+add wave -position insertpoint /tb_atan/u_Atan/vcordic/tofloatzout_io_out
+add wave -position insertpoint /tb_atan/u_Atan/vcordic/io_out_z
+add wave -position insertpoint /tb_atan/u_Atan/vcordic/tofixedx0_io_in
+add wave -position insertpoint /tb_atan/u_Atan/vcordic/tofixedx0/io_in
+add wave -position insertpoint /tb_atan/u_Atan/vcordic/tofixedx0_io_out
+add wave -position insertpoint /tb_atan/u_Atan/vcordic/tofixedx0/io_out
+add wave -position insertpoint /tb_atan/u_Atan/vcordic/tofixedy0_io_in
+add wave -position insertpoint /tb_atan/u_Atan/vcordic/tofixedy0_io_out
+add wave -position insertpoint /tb_atan/u_Atan/vcordic/tofixedz0_io_in
+add wave -position insertpoint /tb_atan/u_Atan/vcordic/tofixedz0_io_out
+add wave -position insertpoint /tb_atan/u_Atan/vcordic/tofloatxout_io_in
+add wave -position insertpoint /tb_atan/u_Atan/vcordic/tofloatxout/io_in
+add wave -position insertpoint /tb_atan/u_Atan/vcordic/tofloatxout_io_out
+add wave -position insertpoint /tb_atan/u_Atan/vcordic/tofloatxout/io_out
+add wave -position insertpoint /tb_atan/u_Atan/vcordic/tofloatyout_io_in
+add wave -position insertpoint /tb_atan/u_Atan/vcordic/tofloatyout_io_out
+add wave -position insertpoint /tb_atan/u_Atan/vcordic/tofloatzout_io_in
+add wave -position insertpoint /tb_atan/u_Atan/vcordic/tofloatzout_io_out
+
+add wave -position insertpoint /tb_atan/u_Atan/vcordic/xr_1
+add wave -position insertpoint /tb_atan/u_Atan/vcordic/tofloatxout_io_in
+add wave -position insertpoint /tb_atan/u_Atan/vcordic/yr_1
+add wave -position insertpoint /tb_atan/u_Atan/vcordic/tofloatyout_io_in
+add wave -position insertpoint /tb_atan/u_Atan/vcordic/zr_1
+add wave -position insertpoint /tb_atan/u_Atan/vcordic/tofloatzout_io_in
+run 1us                                                                            
