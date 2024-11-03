@@ -1,0 +1,10 @@
+Theta (Degrees),"Theta (Radians, IEEE 754)",y = tan(Theta) (IEEE 754)
+0,00000000,00000000
+30,3f060a92,3f13cd3a
+45,3f490fdb,3f800000
+60,3f860a92,3fddb3d7
+90,3fc90fdb,5a6814b4
+-30,bf060a92,bf13cd3a
+-45,bf490fdb,bf800000
+-60,bf860a92,bfddb3d7
+-90,bfc90fdb,da6814b4

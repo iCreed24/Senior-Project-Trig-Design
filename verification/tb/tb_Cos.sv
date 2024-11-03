@@ -17,13 +17,15 @@
 module tb_cos();
 parameter TEST_SIZE = 9;
 `ifdef COS_N32_PD32_BW32
-parameter LATENCY = 67;
+parameter LATENCY = 67; //34+32+1
 `elsif COS_N32_PD16_BW32
-parameter LATENCY = 51;
+parameter LATENCY = 51; //? 34+16+1
 `elsif COS_N32_PD8_BW32
-parameter LATENCY = 43;
+parameter LATENCY = 43; //? 34+8+1
 `elsif COS_N32_PD4_BW32
-parameter LATENCY = 39;
+parameter LATENCY = 40; // 34+4+2
+`elsif COS_N32_PD1_BW32
+parameter LATENCY = 37; //34+1+2
 `endif
 
 parameter ERROR_TOLERANCE = 1;
@@ -58,7 +60,7 @@ initial begin
    reset = 1'b1;
    clock = 1'b0;
    io_in = 32'h0;  
-   #2;
+   #12;
    reset = 1'b0;
    @(posedge clock);
 
@@ -71,13 +73,15 @@ initial begin
 end
 
 initial begin
-  wait (reset);
+  wait (~reset);
+  @(posedge clock);
   @(negedge clock);
   repeat(LATENCY) @(negedge clock);
   for (j=0; j < TEST_SIZE; j = j+1) begin
       golden_real=ieee754_to_fp(output_cos[j]);
       dut_out_real=ieee754_to_fp(io_out);
-      if(output_cos[j]==32'h248D3132) begin
+      //if(output_cos[j]==32'h248D3132) begin
+      if(output_cos[j]==32'h0) begin
         if((golden_real-dut_out_real<=0.00001)|(dut_out_real-golden_real<=0.00001)) begin //if less than 0.001 pass the test
           error_percent=1;
         end else begin
