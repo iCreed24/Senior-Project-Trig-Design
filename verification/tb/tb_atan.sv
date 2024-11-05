@@ -15,7 +15,7 @@
 
 
 module tb_atan();
-parameter TEST_SIZE = 9;
+parameter TEST_SIZE = 11;
 `ifdef ATAN_N32_PD32_BW32
 parameter LATENCY = 67;
 `elsif ATAN_N32_PD16_BW32
@@ -25,7 +25,7 @@ parameter LATENCY = 43;
 `elsif ATAN_N32_PD4_BW32
 parameter LATENCY = 39;
 `elsif ATAN_N32_PD1_BW32
-parameter LATENCY = 37;
+parameter LATENCY = 1;
 `endif
 
 parameter ERROR_TOLERANCE = 1;
@@ -60,7 +60,7 @@ initial begin
    reset = 1'b1;
    clock = 1'b0;
    io_in = 32'h0;  
-   #12;
+   #20;
    reset = 1'b0;
    @(posedge clock);
 
@@ -73,8 +73,7 @@ initial begin
 end
 
 initial begin
-  wait (~reset);
-  @(posedge clock);
+  wait (reset);
   @(negedge clock);
   repeat(LATENCY) @(negedge clock);
   for (j=0; j < TEST_SIZE; j = j+1) begin

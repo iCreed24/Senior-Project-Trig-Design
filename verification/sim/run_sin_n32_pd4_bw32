@@ -27,39 +27,39 @@ vlog +define+SIN_N32_PD4_BW32\
 
 echo "+====================================="
 echo "| Compiler Pass                       "
-echo "| Being to Run Simulation             "
+echo "| Begin to Run Simulation             "
 echo "+====================================="
-vsim work.tb_sin -t 1ns
+vsim work.tb_Sin -t 1ns
 
 ################## #################### mus  ####################################
-add wave -noupdate -format logic -radix hexadecimal tb_sin/u_Sin/clock
-add wave -noupdate -format logic -radix hexadecimal tb_sin/u_Sin/reset
-add wave -noupdate -format logic -radix hexadecimal tb_sin/u_Sin/io_in
-add wave -noupdate -format logic -radix hexadecimal tb_sin/u_Sin/io_out
+add wave -noupdate -format logic -radix hexadecimal tb_Sin/u_Sin/clock
+add wave -noupdate -format logic -radix hexadecimal tb_Sin/u_Sin/reset
+add wave -noupdate -format logic -radix hexadecimal tb_Sin/u_Sin/io_in
+add wave -noupdate -format logic -radix hexadecimal tb_Sin/u_Sin/io_out
 
-add wave -position insertpoint /tb_sin/u_Sin/reducer/clock
-add wave -position insertpoint /tb_sin/u_Sin/reducer/reset
-add wave -position insertpoint /tb_sin/u_Sin/reducer/io_in
-add wave -position insertpoint /tb_sin/u_Sin/reducer/io_out
-add wave -position insertpoint /tb_sin/u_Sin/tofixedz0/io_in
-add wave -position insertpoint /tb_sin/u_Sin/tofixedz0/io_out
+add wave -position insertpoint /tb_Sin/u_Sin/reducer/clock
+add wave -position insertpoint /tb_Sin/u_Sin/reducer/reset
+add wave -position insertpoint /tb_Sin/u_Sin/reducer/io_in
+add wave -position insertpoint /tb_Sin/u_Sin/reducer/io_out
+add wave -position insertpoint /tb_Sin/u_Sin/tofixedz0/io_in
+add wave -position insertpoint /tb_Sin/u_Sin/tofixedz0/io_out
 
-add wave -position insertpoint /tb_sin/u_Sin/cordic/tofixedx0/io_in
-add wave -position insertpoint /tb_sin/u_Sin/cordic/tofixedx0/io_out
-add wave -position insertpoint /tb_sin/u_Sin/cordic/tofixedy0/io_in
-add wave -position insertpoint /tb_sin/u_Sin/cordic/tofixedy0/io_out
-add wave -position insertpoint /tb_sin/u_Sin/cordic/tofloatxout/io_in
-add wave -position insertpoint /tb_sin/u_Sin/cordic/tofloatxout/io_out
-add wave -position insertpoint /tb_sin/u_Sin/cordic/tofloatyout/io_in
-add wave -position insertpoint /tb_sin/u_Sin/cordic/tofloatyout/io_out
-add wave -position insertpoint /tb_sin/u_Sin/cordic/tofloatzout/io_in
-add wave -position insertpoint /tb_sin/u_Sin/cordic/tofloatzout/io_out
+add wave -position insertpoint /tb_Sin/u_Sin/cordic/tofixedx0/io_in
+add wave -position insertpoint /tb_Sin/u_Sin/cordic/tofixedx0/io_out
+add wave -position insertpoint /tb_Sin/u_Sin/cordic/tofixedy0/io_in
+add wave -position insertpoint /tb_Sin/u_Sin/cordic/tofixedy0/io_out
+add wave -position insertpoint /tb_Sin/u_Sin/cordic/tofloatxout/io_in
+add wave -position insertpoint /tb_Sin/u_Sin/cordic/tofloatxout/io_out
+add wave -position insertpoint /tb_Sin/u_Sin/cordic/tofloatyout/io_in
+add wave -position insertpoint /tb_Sin/u_Sin/cordic/tofloatyout/io_out
+add wave -position insertpoint /tb_Sin/u_Sin/cordic/tofloatzout/io_in
+add wave -position insertpoint /tb_Sin/u_Sin/cordic/tofloatzout/io_out
 
-add wave -position insertpoint /tb_sin/u_Sin/reducer/divider/io_in_a
-add wave -position insertpoint /tb_sin/u_Sin/reducer/divider/io_out_s
-add wave -position insertpoint /tb_sin/u_Sin/reducer/extractor/io_in_a
-add wave -position insertpoint /tb_sin/u_Sin/reducer/extractor/io_out_frac
-add wave -position insertpoint /tb_sin/u_Sin/reducer/mul/io_in_a
-add wave -position insertpoint /tb_sin/u_Sin/reducer/mul/io_out_s
+add wave -position insertpoint /tb_Sin/u_Sin/reducer/divider/io_in_a
+add wave -position insertpoint /tb_Sin/u_Sin/reducer/divider/io_out_s
+add wave -position insertpoint /tb_Sin/u_Sin/reducer/extractor/io_in_a
+add wave -position insertpoint /tb_Sin/u_Sin/reducer/extractor/io_out_frac
+add wave -position insertpoint /tb_Sin/u_Sin/reducer/mul/io_in_a
+add wave -position insertpoint /tb_Sin/u_Sin/reducer/mul/io_out_s
 
 run 1us                                                                            
