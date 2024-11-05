@@ -1,0 +1,17 @@
+../dut/sin_n4_pd4_bw32/Sin.v
+../dut/sin_n4_pd4_bw32/CLZ32.v
+../dut/sin_n4_pd4_bw32/CORDIC.v
+../dut/sin_n4_pd4_bw32/divider_BW48_v3.v
+../dut/sin_n4_pd4_bw32/FixedToFloat32.v
+../dut/sin_n4_pd4_bw32/FloatToFixed32.v
+../dut/sin_n4_pd4_bw32/FP_divider_bw32.v
+../dut/sin_n4_pd4_bw32/FP_extract.v
+../dut/sin_n4_pd4_bw32/FP_multiplier_bw32.v
+../dut/sin_n4_pd4_bw32/full_adder.v
+../dut/sin_n4_pd4_bw32/full_subtractor.v
+../dut/sin_n4_pd4_bw32/leadingOneDetector.v
+../dut/sin_n4_pd4_bw32/multiplier.v
+../dut/sin_n4_pd4_bw32/TrigRangeReducer.v
+../dut/sin_n4_pd4_bw32/twoscomplement.v
+../tb/tb_func.sv
+../tb/tb_sin_iter.sv

@@ -14,18 +14,18 @@
 */
 
 
-module tb_sin();
+module tb_Sin();
 parameter TEST_SIZE = 9;
 `ifdef SIN_N32_PD32_BW32
-parameter LATENCY = 68; //34+32+2
+parameter LATENCY = 68;
 `elsif SIN_N32_PD16_BW32
-parameter LATENCY = 52; //? 34+16+2
+parameter LATENCY = 52;
 `elsif SIN_N32_PD8_BW32
-parameter LATENCY = 44; //34+8+2
+parameter LATENCY = 44;
 `elsif SIN_N32_PD4_BW32
-parameter LATENCY = 40; //34+4+2
+parameter LATENCY = 40;
 `elsif SIN_N32_PD1_BW32
-parameter LATENCY = 37; //34+1+2
+parameter LATENCY = 37;
 `endif
 
 parameter ERROR_TOLERANCE = 1;
@@ -36,8 +36,8 @@ reg [31:0]  input_theta[TEST_SIZE-1:0];
 `include "tb_func.sv"
 
 initial begin
-   $readmemh("../golden/rtl-theta-input.txt",input_theta);
-   $readmemh("../golden/rtl-sin-output.txt",output_sin);
+   $readmemh("../golden/rtl-rand-theta-input.txt",input_theta);
+   $readmemh("../golden/rtl-rand-sin-output.txt",output_sin);
 end
 
 reg         clock;
@@ -60,7 +60,7 @@ initial begin
    reset = 1'b1;
    clock = 1'b0;
    io_in = 32'h0;  
-   #12;
+   #2;
    reset = 1'b0;
    @(posedge clock);
 
@@ -73,21 +73,19 @@ initial begin
 end
 
 initial begin
-  wait (~reset);
-  @(posedge clock);
+  wait (reset);
   @(negedge clock);
   repeat(LATENCY) @(negedge clock);
   for (j=0; j < TEST_SIZE; j = j+1) begin
       golden_real=ieee754_to_fp(output_sin[j]);
       dut_out_real=ieee754_to_fp(io_out);
-      //if(output_sin[j]==32'h248D3132 | output_sin[j]==32'hB2A00000) begin //248d3132 is 6.123x10^-17 and b2a00000 is -1.8626x10^-8 which are effectively zeros
-      if(output_sin[j]==32'h0) begin //248d3132 is 6.123x10^-17 and b2a00000 is -1.8626x10^-8 which are effectively zeros
+      if(output_sin[j]==32'h248D3132) begin
         if((golden_real-dut_out_real<=0.00001)|(dut_out_real-golden_real<=0.00001)) begin //if less than 0.001 pass the test
           error_percent=1;
         end else begin
           error_percent=2;
         end
-        //$display("Monitor at %dns, sin output: %f, expected: %f", $time, dut_out_real, golden_real);
+        //$display("Monitor at %dns, cos output: %f, expected: %f", $time, dut_out_real, golden_real);
       end else begin
         error_percent  = (dut_out_real-golden_real)/golden_real*100;
         if (error_percent < 0) begin
@@ -96,12 +94,12 @@ initial begin
       end
 
     if(error_percent<=ERROR_TOLERANCE) begin
-      //$display("At %dns, the test case PASS! error_percent: %f, sin output: %h, expected: %h", $time, error_percent, io_out, output_sin[j]);
+      //$display("At %dns, the test case PASS! error_percent: %f, cos output: %h, expected: %h", $time, error_percent, io_out, output_cos[j]);
       $display("At %dns, the test case PASS! error_percent: %f, sin output: %f, expected: %f", $time, error_percent, dut_out_real, golden_real);
-      //$display("At %dns, the test case Pass! error_percent: %f, sin output: %h", $time, error_percent, output_sin[j]);
-      //$display("At %dns, the test case Pass! error_percent: %f, sin output: %f", $time, error_percent, golden_real);
+      //$display("At %dns, the test case Pass! error_percent: %f, cos output: %h", $time, error_percent, output_cos[j]);
+      //$display("At %dns, the test case Pass! error_percent: %f, cos output: %f", $time, error_percent, golden_real);
     end else begin
-      //$display("At %dns, the test case FAIL! error_percent: %f, sin output: %h, expected: %h", $time, error_percent, io_out, output_sin[j]);
+      //$display("At %dns, the test case FAIL! error_percent: %f, cos output: %h, expected: %h", $time, error_percent, io_out, output_cos[j]);
       $display("At %dns, the test case FAIL! error_percent: %f, sin output: %f, expected: %f", $time, error_percent, dut_out_real, golden_real);
     end
     @(negedge clock);

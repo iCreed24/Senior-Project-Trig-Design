@@ -29,37 +29,37 @@ echo "+====================================="
 echo "| Compiler Pass                       "
 echo "| Being to Run Simulation             "
 echo "+====================================="
-vsim work.tb_cos -t 1ns
+vsim work.tb_Cos -t 1ns
 
 ################## #################### mus  ####################################
-add wave -noupdate -format logic -radix hexadecimal tb_cos/u_Cos/clock
-add wave -noupdate -format logic -radix hexadecimal tb_cos/u_Cos/reset
-add wave -noupdate -format logic -radix hexadecimal tb_cos/u_Cos/io_in
-add wave -noupdate -format logic -radix hexadecimal tb_cos/u_Cos/io_out
+add wave -noupdate -format logic -radix hexadecimal tb_Cos/u_Cos/clock
+add wave -noupdate -format logic -radix hexadecimal tb_Cos/u_Cos/reset
+add wave -noupdate -format logic -radix hexadecimal tb_Cos/u_Cos/io_in
+add wave -noupdate -format logic -radix hexadecimal tb_Cos/u_Cos/io_out
 
-add wave -position insertpoint /tb_cos/u_Cos/reducer/clock
-add wave -position insertpoint /tb_cos/u_Cos/reducer/reset
-add wave -position insertpoint /tb_cos/u_Cos/reducer/io_in
-add wave -position insertpoint /tb_cos/u_Cos/reducer/io_out
-add wave -position insertpoint /tb_cos/u_Cos/tofixedz0/io_in
-add wave -position insertpoint /tb_cos/u_Cos/tofixedz0/io_out
+add wave -position insertpoint /tb_Cos/u_Cos/reducer/clock
+add wave -position insertpoint /tb_Cos/u_Cos/reducer/reset
+add wave -position insertpoint /tb_Cos/u_Cos/reducer/io_in
+add wave -position insertpoint /tb_Cos/u_Cos/reducer/io_out
+add wave -position insertpoint /tb_Cos/u_Cos/tofixedz0/io_in
+add wave -position insertpoint /tb_Cos/u_Cos/tofixedz0/io_out
 
-add wave -position insertpoint /tb_cos/u_Cos/cordic/tofixedx0/io_in
-add wave -position insertpoint /tb_cos/u_Cos/cordic/tofixedx0/io_out
-add wave -position insertpoint /tb_cos/u_Cos/cordic/tofixedy0/io_in
-add wave -position insertpoint /tb_cos/u_Cos/cordic/tofixedy0/io_out
-add wave -position insertpoint /tb_cos/u_Cos/cordic/tofloatxout/io_in
-add wave -position insertpoint /tb_cos/u_Cos/cordic/tofloatxout/io_out
-add wave -position insertpoint /tb_cos/u_Cos/cordic/tofloatyout/io_in
-add wave -position insertpoint /tb_cos/u_Cos/cordic/tofloatyout/io_out
-add wave -position insertpoint /tb_cos/u_Cos/cordic/tofloatzout/io_in
-add wave -position insertpoint /tb_cos/u_Cos/cordic/tofloatzout/io_out
+add wave -position insertpoint /tb_Cos/u_Cos/cordic/tofixedx0/io_in
+add wave -position insertpoint /tb_Cos/u_Cos/cordic/tofixedx0/io_out
+add wave -position insertpoint /tb_Cos/u_Cos/cordic/tofixedy0/io_in
+add wave -position insertpoint /tb_Cos/u_Cos/cordic/tofixedy0/io_out
+add wave -position insertpoint /tb_Cos/u_Cos/cordic/tofloatxout/io_in
+add wave -position insertpoint /tb_Cos/u_Cos/cordic/tofloatxout/io_out
+add wave -position insertpoint /tb_Cos/u_Cos/cordic/tofloatyout/io_in
+add wave -position insertpoint /tb_Cos/u_Cos/cordic/tofloatyout/io_out
+add wave -position insertpoint /tb_Cos/u_Cos/cordic/tofloatzout/io_in
+add wave -position insertpoint /tb_Cos/u_Cos/cordic/tofloatzout/io_out
 
-add wave -position insertpoint /tb_cos/u_Cos/reducer/divider/io_in_a
-add wave -position insertpoint /tb_cos/u_Cos/reducer/divider/io_out_s
-add wave -position insertpoint /tb_cos/u_Cos/reducer/extractor/io_in_a
-add wave -position insertpoint /tb_cos/u_Cos/reducer/extractor/io_out_frac
-add wave -position insertpoint /tb_cos/u_Cos/reducer/mul/io_in_a
-add wave -position insertpoint /tb_cos/u_Cos/reducer/mul/io_out_s
+add wave -position insertpoint /tb_Cos/u_Cos/reducer/divider/io_in_a
+add wave -position insertpoint /tb_Cos/u_Cos/reducer/divider/io_out_s
+add wave -position insertpoint /tb_Cos/u_Cos/reducer/extractor/io_in_a
+add wave -position insertpoint /tb_Cos/u_Cos/reducer/extractor/io_out_frac
+add wave -position insertpoint /tb_Cos/u_Cos/reducer/mul/io_in_a
+add wave -position insertpoint /tb_Cos/u_Cos/reducer/mul/io_out_s
 
 run 1us                                                                            
