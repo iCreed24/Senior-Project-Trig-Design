@@ -1,0 +1,67 @@
+#!/bin/csh -f
+################################################################################
+# simulation top script
+# change modelsim in this file dir and run "do this_file.do"
+# project dir ---+---> hdl source dir
+#                +---> sim script dir
+#
+################################################################################
+
+# check if current dir has modelsim config file
+set has_config  [file exists modelsim.do]
+# config modelsim 
+if {$has_config==1} { do modelsim.do  ; }
+
+echo "+====================================="
+echo "| Creat Lib Work soc                  "
+echo "+====================================="
+vlib work
+vmap work work 
+
+echo "+====================================="
+echo "| Complile RTL Code of soc            "
+echo "+====================================="
+vlog +define+SIN_N8_PD8_BW32\
+     -f ../filelist/filelist_sin_n8_pd8_bw32.f  
+#vlog -f ../filelist/filelist_13cc.f  
+
+echo "+====================================="
+echo "| Compiler Pass                       "
+echo "| Begin to Run Simulation             "
+echo "+====================================="
+vsim work.tb_Sin -t 1ns
+
+################## #################### mus  ####################################
+add wave -noupdate -format logic -radix hexadecimal tb_Sin/u_Sin/clock
+add wave -noupdate -format logic -radix hexadecimal tb_Sin/u_Sin/reset
+add wave -noupdate -format logic -radix hexadecimal tb_Sin/u_Sin/io_in
+add wave -noupdate -format logic -radix hexadecimal tb_Sin/u_Sin/io_out
+
+add wave -position insertpoint /tb_Sin/u_Sin/reducer/clock
+add wave -position insertpoint /tb_Sin/u_Sin/reducer/reset
+add wave -position insertpoint /tb_Sin/u_Sin/reducer/io_in
+add wave -position insertpoint /tb_Sin/u_Sin/reducer/io_out
+add wave -position insertpoint /tb_Sin/u_Sin/tofixedz0/io_in
+add wave -position insertpoint /tb_Sin/u_Sin/tofixedz0/io_out
+
+add wave -position insertpoint /tb_Sin/u_Sin/cordic/tofixedx0/io_in
+add wave -position insertpoint /tb_Sin/u_Sin/cordic/tofixedx0/io_out
+add wave -position insertpoint /tb_Sin/u_Sin/cordic/tofixedy0/io_in
+add wave -position insertpoint /tb_Sin/u_Sin/cordic/tofixedy0/io_out
+add wave -position insertpoint /tb_Sin/u_Sin/cordic/tofloatxout/io_in
+add wave -position insertpoint /tb_Sin/u_Sin/cordic/tofloatxout/io_out
+add wave -position insertpoint /tb_Sin/u_Sin/cordic/tofloatyout/io_in
+add wave -position insertpoint /tb_Sin/u_Sin/cordic/tofloatyout/io_out
+add wave -position insertpoint /tb_Sin/u_Sin/cordic/tofloatzout/io_in
+add wave -position insertpoint /tb_Sin/u_Sin/cordic/tofloatzout/io_out
+
+add wave -position insertpoint /tb_Sin/u_Sin/reducer/divider/io_in_a
+add wave -position insertpoint /tb_Sin/u_Sin/reducer/divider/io_out_s
+add wave -position insertpoint /tb_Sin/u_Sin/reducer/extractor/io_in_a
+add wave -position insertpoint /tb_Sin/u_Sin/reducer/extractor/io_out_frac
+add wave -position insertpoint /tb_Sin/u_Sin/reducer/mul/io_in_a
+add wave -position insertpoint /tb_Sin/u_Sin/reducer/mul/io_out_s
+
+run 1us
+
+wave zoom full                                                                            
